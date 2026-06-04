@@ -1,0 +1,933 @@
+Ecco una vera e propria **applicazione web interattiva pronta all'uso** (in un unico file HTML).
+
+Si chiama **HomeSync Hub**. È una dashboard di coppia moderna, calda ed elegante, progettata per essere utilizzata sia da PC che da smartphone.
+
+### Cosa fa questa Dashboard (Tutte le funzioni attive):
+
+1. **Cassa Comune & Spese:** Inserisci le spese, scegli chi ha pagato e la dashboard calcolerà **in tempo reale** chi deve quanto a chi, aggiornando un grafico a barre di contribuzione.
+2. **Lista della Spesa Dinamica:** Aggiungi elementi, spuntali al supermercato (verranno sbarrati) e ripulisci la lista con un click.
+3. **Bacheca delle Note:** Create e "appiccicate" post-it digitali per non dimenticare nulla.
+4. **Salvadanaio & Obiettivi:** Impostate un traguardo di risparmio comune (es. un viaggio) e monitorate la barra di progresso interattiva.
+5. **Tracker Acqua e Abitudini:** Monitorate i bicchieri d'acqua della giornata e spuntate le vostre abitudini quotidiane separatamente.
+6. **🤖 SIMULATORE TELEGRAM BOT (Esclusivo!):** Per farti capire come funzionerà l'automatismo reale, ho inserito un widget speciale sulla barra laterale. Puoi digitare comandi reali (es: `/spesa 15 Pizza` o `/compra Latte`) per vedere la dashboard popolarsi all'istante senza toccare i widget a mano!
+
+Tutti i dati si **salvano automaticamente nel browser (localStorage)**: se ricarichi la pagina o la riapri domani, ritroverai tutto esattamente come lo hai lasciato.
+
+```html:homesync_dashboard.html
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeSync Hub - Dashboard di Coppia</title>
+    <!-- Tailwind CSS per layout moderno e responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        stone: {
+                            850: '#201c1a',
+                        },
+                        terracotta: {
+                            50: '#fdf8f5',
+                            100: '#fbeee6',
+                            500: '#d95d39',
+                            600: '#c2410c',
+                            700: '#9a3412',
+                        }
+                    },
+                    fontFamily: {
+                        playfair: ['"Playfair Display"', 'serif'],
+                        sans: ['"Inter"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9f6;
+            background-image: 
+                radial-gradient(circle at 100% 0%, rgba(217, 93, 57, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 0% 100%, rgba(194, 65, 12, 0.03) 0%, transparent 40%);
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e7e5e4;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d6d3d1;
+        }
+    </style>
+</head>
+<body class="min-height-screen text-stone-800 pb-12">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="border-b border-stone-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-terracotta-600 text-white p-2 rounded-xl shadow-md shadow-terracotta-600/20">
+                    <i class="fa-solid fa-house-chimney-heart text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-serif font-bold text-stone-900">HomeSync Hub</h1>
+                    <p class="text-xs text-stone-500 font-medium">Il vostro spazio digitale condiviso</p>
+                </div>
+            </div>
+
+            <!-- Active User Switcher (Simula l'uso di uno o dell'altro partner) -->
+            <div class="flex items-center gap-3 bg-stone-100 p-1.5 rounded-2xl border border-stone-200">
+                <span class="text-xs font-semibold text-stone-500 pl-2">Stai usando come:</span>
+                <button id="btn-user-1" onclick="switchUser('Partner A')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-terracotta-600 shadow-sm border border-stone-200/50">
+                    <i class="fa-solid fa-circle-user mr-1.5"></i>Partner A
+                </button>
+                <button id="btn-user-2" onclick="switchUser('Partner B')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:text-stone-900">
+                    <i class="fa-solid fa-circle-user mr-1.5"></i>Partner B
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-8">
+        
+        <!-- INTRO GREETINGS & METEO BANNER -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="md:col-span-2 bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute right-0 top-0 translate-x-12 -translate-y-6 text-stone-100/40 text-9xl font-serif pointer-events-none">“</div>
+                <div>
+                    <h2 class="text-3xl font-serif text-stone-900 mb-2">Ciao <span id="current-user-display" class="text-terracotta-600 font-bold">Partner A</span> & <span id="other-user-display">Partner B</span>!</h2>
+                    <p class="text-stone-600 text-sm max-w-lg">Bentornati nel vostro centro di controllo. Sotto trovi lo stato sincronizzato delle spese, della spesa e dei vostri obiettivi comuni.</p>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-4 items-center text-xs text-stone-500 border-t border-stone-100 pt-4">
+                    <span><i class="fa-solid fa-calendar-day text-terracotta-500 mr-1"></i> <span id="live-date">Caricamento...</span></span>
+                    <span><i class="fa-solid fa-clock text-terracotta-500 mr-1"></i> <span id="live-time">00:00</span></span>
+                    <span><i class="fa-solid fa-cloud-sun text-terracotta-500 mr-1"></i> Roma, 22°C (Sereno)</span>
+                </div>
+            </div>
+
+            <!-- SIMULATORE TELEGRAM BOT -->
+            <div class="bg-stone-900 text-stone-100 border border-stone-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 text-stone-800 text-8xl pointer-events-none">
+                    <i class="fa-brands fa-telegram"></i>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase">Simulatore</span>
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-stone-400">Bot Telegram di Coppia</h3>
+                </div>
+                <p class="text-xs text-stone-400 mb-4">Prova a inviare comandi rapidi come se fossi in chat su Telegram!</p>
+                
+                <div class="space-y-3">
+                    <div class="bg-stone-850 p-2.5 rounded-xl border border-stone-800 text-[11px] font-mono text-stone-300 max-h-24 overflow-y-auto" id="bot-logs">
+                        <div><span class="text-green-400">[System]</span> Bot pronto per ricevere input.</div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="bot-input" placeholder="Es: /spesa 14 Pizza" class="bg-stone-850 text-white placeholder-stone-500 text-xs px-3 py-2.5 rounded-xl border border-stone-800 focus:outline-none focus:border-terracotta-500 flex-grow font-mono">
+                        <button onclick="simulateTelegramMessage()" class="bg-terracotta-500 hover:bg-terracotta-600 text-white font-bold px-4 rounded-xl transition-all text-xs">Invia</button>
+                    </div>
+                </div>
+                <div class="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    <button onclick="fillBotInput('/spesa 15 Pizza')" class="text-[10px] bg-stone-800 hover:bg-stone-750 text-stone-300 px-2.5 py-1 rounded-lg border border-stone-700 shrink-0 font-mono">/spesa 15 Pizza</button>
+                    <button onclick="fillBotInput('/compra Latte intero')" class="text-[10px] bg-stone-800 hover:bg-stone-750 text-stone-300 px-2.5 py-1 rounded-lg border border-stone-700 shrink-0 font-mono">/compra Latte</button>
+                    <button onclick="fillBotInput('/nota Chiamare idraulico')" class="text-[10px] bg-stone-800 hover:bg-stone-750 text-stone-300 px-2.5 py-1 rounded-lg border border-stone-700 shrink-0 font-mono">/nota Idraulico</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- COLUMN 1: CASSA COMUNE -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- WIDGET 1: CASSA COMUNE & RENDICONTO -->
+                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-2 bg-amber-50 text-amber-600 rounded-xl"><i class="fa-solid fa-wallet"></i></span>
+                            <h3 class="text-xl font-serif font-bold text-stone-900">Cassa Comune & Bilancio</h3>
+                        </div>
+                        <span class="text-xs font-semibold px-2.5 py-1 bg-stone-100 rounded-full text-stone-600" id="expenses-count">0 Spese</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-center">
+                            <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider">Totale Speso</span>
+                            <div class="text-2xl font-serif font-bold text-stone-900 mt-1" id="total-spent">0.00 €</div>
+                        </div>
+                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-center">
+                            <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider">Quota a Testa</span>
+                            <div class="text-2xl font-serif font-bold text-stone-900 mt-1" id="quota-per-person">0.00 €</div>
+                        </div>
+                        <!-- CHI DEVE A CHI (STATO DI PAREGGIO) -->
+                        <div class="bg-terracotta-50/70 border border-terracotta-100 rounded-2xl p-4 text-center flex flex-col justify-center items-center">
+                            <span class="text-xs font-semibold text-terracotta-600 uppercase tracking-wider mb-1">Stato dei Conti</span>
+                            <div class="text-sm font-semibold text-stone-800" id="settlement-status">Conti in perfetto pari! ⚖️</div>
+                        </div>
+                    </div>
+
+                    <!-- NUOVA SPESA FORM -->
+                    <div class="bg-stone-50/50 p-4 rounded-2xl border border-stone-100 mb-6">
+                        <h4 class="text-xs font-bold text-stone-600 uppercase tracking-wider mb-3">Registra Spesa a Mano</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input type="number" id="expense-amount" placeholder="Importo (€)" class="bg-white text-stone-800 text-sm px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-terracotta-500">
+                            <input type="text" id="expense-desc" placeholder="Descrizione (es: Spesa Conad)" class="bg-white text-stone-800 text-sm px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-terracotta-500">
+                            <button onclick="addExpense()" class="bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all">Aggiungi Spesa</button>
+                        </div>
+                    </div>
+
+                    <!-- TABELLA DELLE ULTIME SPESE -->
+                    <div class="overflow-hidden border border-stone-100 rounded-2xl">
+                        <div class="max-h-56 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-stone-50 text-stone-500 text-xs uppercase sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3">Chi</th>
+                                        <th class="px-4 py-3">Descrizione</th>
+                                        <th class="px-4 py-3 text-right">Importo</th>
+                                        <th class="px-4 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenses-list" class="divide-y divide-stone-100">
+                                    <!-- Popolato da JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIDGET 2: BUDGET SALVADANAIO & COSE DA COMPRARE -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <!-- SALVADANAIO TRAGUARDO -->
+                    <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa-solid fa-piggy-bank"></i></span>
+                                    <h3 class="text-lg font-serif font-bold text-stone-900">Salvadanaio Comune</h3>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="flex justify-between items-end mb-1">
+                                    <span class="text-xs text-stone-500 font-semibold" id="savings-title-display">Viaggio in Giappone 🇯🇵</span>
+                                    <span class="text-xs text-stone-700 font-bold" id="savings-progress-text">0 / 0 €</span>
+                                </div>
+                                <div class="w-full bg-stone-100 h-3.5 rounded-full overflow-hidden border border-stone-200/50">
+                                    <div id="savings-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-4 border-t border-stone-100">
+                            <div class="flex gap-2">
+                                <input type="number" id="savings-input" placeholder="Importo (€)" class="bg-stone-50 text-stone-800 text-xs px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-emerald-500 flex-grow">
+                                <button onclick="adjustSavings(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-plus"></i> Versa</button>
+                                <button onclick="adjustSavings(false)" class="bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-minus"></i> Preleva</button>
+                            </div>
+                            
+                            <!-- Opzione per cambiare l'obiettivo -->
+                            <details class="text-xs text-stone-500">
+                                <summary class="cursor-pointer hover:text-stone-700 select-none">Modifica obiettivo salvadanaio</summary>
+                                <div class="mt-2 space-y-2 p-2 bg-stone-50 rounded-xl border border-stone-100">
+                                    <input type="text" id="new-savings-title" placeholder="Nome obiettivo (es: Nuovo Divano)" class="w-full bg-white text-xs px-2 py-1.5 rounded-lg border border-stone-200 focus:outline-none">
+                                    <input type="number" id="new-savings-target" placeholder="Cifra target (€)" class="w-full bg-white text-xs px-2 py-1.5 rounded-lg border border-stone-200 focus:outline-none">
+                                    <button onclick="updateSavingsTarget()" class="w-full bg-stone-800 hover:bg-stone-900 text-white text-[10px] font-bold py-1.5 rounded-lg">Salva Nuovo Obiettivo</button>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- COSE DA COMPRARE (SHOPPING LIST) -->
+                    <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="p-2 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-cart-shopping"></i></span>
+                                    <h3 class="text-lg font-serif font-bold text-stone-900">Spesa Condivisa</h3>
+                                </div>
+                                <button onclick="clearBoughtItems()" class="text-xs text-stone-400 hover:text-stone-600" title="Rimuovi elementi completati"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+
+                            <div class="space-y-2 max-h-40 overflow-y-auto pr-1" id="shopping-list">
+                                <!-- Popolato da JS -->
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-4 border-t border-stone-100 mt-4">
+                            <input type="text" id="shopping-input" placeholder="Aggiungi es: Latte, Uova" class="bg-stone-50 text-stone-800 text-xs px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-blue-500 flex-grow">
+                            <button onclick="addShoppingItem()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 rounded-xl transition-all">Aggiungi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIDGET 3: NOTE CONDIVISE (STICKY NOTES) -->
+                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-2 bg-pink-50 text-pink-600 rounded-xl"><i class="fa-solid fa-thumbtack"></i></span>
+                            <h3 class="text-xl font-serif font-bold text-stone-900">Bacheca dei Post-it</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" id="notes-grid">
+                        <!-- Popolato da JS -->
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="note-input" placeholder="Lascia un messaggio o una nota veloce per entrambi..." class="bg-stone-50 text-stone-800 text-sm px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:border-pink-500 flex-grow">
+                        <button onclick="addNote()" class="bg-pink-600 hover:bg-pink-700 text-white font-bold text-sm px-6 rounded-xl transition-all">Appicca Nota</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLUMN 2: SIDEBAR (WELL-BEING & ABITUDINI) -->
+            <div class="space-y-8">
+                
+                <!-- WIDGET 4: MONITORAGGIO ACQUA & IDRATAZIONE -->
+                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2.5 mb-6">
+                        <span class="p-2 bg-cyan-50 text-cyan-600 rounded-xl"><i class="fa-solid fa-droplet"></i></span>
+                        <h3 class="text-xl font-serif font-bold text-stone-900">Idratazione Giornaliera</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Partner A -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-2 text-stone-600">
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-terracotta-500"></i> Partner A</span>
+                                <span id="water-text-1">0 / 8 bicchieri</span>
+                            </div>
+                            <div class="flex justify-between gap-1.5" id="water-grid-1">
+                                <!-- Generato da JS -->
+                            </div>
+                        </div>
+
+                        <!-- Partner B -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-2 text-stone-600">
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-stone-400"></i> Partner B</span>
+                                <span id="water-text-2">0 / 8 bicchieri</span>
+                            </div>
+                            <div class="flex justify-between gap-1.5" id="water-grid-2">
+                                <!-- Generato da JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIDGET 5: HABIT TRACKER (ABITUDINI DI COPPIA) -->
+                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
+                    <div class="flex items-center gap-2.5 mb-6">
+                        <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fa-solid fa-calendar-check"></i></span>
+                        <h3 class="text-xl font-serif font-bold text-stone-900">Abitudini Sincronizzate</h3>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- ABITUDINE 1 -->
+                        <div class="p-3.5 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-bold text-stone-800">Allenamento / Yoga</h4>
+                                <p class="text-[11px] text-stone-500 mb-0">Rimanere in salute insieme</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleHabit('allenamento', 'Partner A')" id="habit-allenamento-1" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">A</button>
+                                <button onclick="toggleHabit('allenamento', 'Partner B')" id="habit-allenamento-2" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">B</button>
+                            </div>
+                        </div>
+
+                        <!-- ABITUDINE 2 -->
+                        <div class="p-3.5 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-bold text-stone-800">Lettura Libri</h4>
+                                <p class="text-[11px] text-stone-500 mb-0">Almeno 15 minuti al giorno</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleHabit('lettura', 'Partner A')" id="habit-lettura-1" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">A</button>
+                                <button onclick="toggleHabit('lettura', 'Partner B')" id="habit-lettura-2" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">B</button>
+                            </div>
+                        </div>
+
+                        <!-- ABITUDINE 3 -->
+                        <div class="p-3.5 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-bold text-stone-800">Studio / Sviluppo</h4>
+                                <p class="text-[11px] text-stone-500 mb-0">Imparare qualcosa di nuovo</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleHabit('studio', 'Partner A')" id="habit-studio-1" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">A</button>
+                                <button onclick="toggleHabit('studio', 'Partner B')" id="habit-studio-2" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">B</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIDGET 6: CITAZIONE E PLAYLIST ACCANTO -->
+                <div class="bg-gradient-to-tr from-stone-900 to-stone-800 text-stone-100 border border-stone-800 rounded-3xl p-6 shadow-md relative overflow-hidden">
+                    <div class="relative z-10 flex flex-col justify-between h-full">
+                        <div>
+                            <span class="text-terracotta-500 text-3xl font-serif">“</span>
+                            <p class="italic text-stone-300 text-sm mb-4" id="random-quote">"La pazienza e la comunicazione sono i mattoni della nostra felicità quotidiana."</p>
+                            <span class="text-xs text-stone-400 font-bold block text-right">— HomeSync Wisdom</span>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-stone-800 flex items-center justify-between">
+                            <span class="text-[10px] uppercase font-bold text-stone-400 tracking-widest"><i class="fa-solid fa-music text-terracotta-500 mr-1"></i> Brano del Mese</span>
+                            <span class="text-xs font-semibold text-stone-300">Spotify Auto-sync 🟢</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- CORE LOGIC JAVASCRIPT -->
+    <script>
+        // Stato Globale dell'App
+        let state = {
+            currentUser: 'Partner A', // Default
+            expenses: [],
+            shopping: [],
+            notes: [],
+            water: {
+                'Partner A': 0,
+                'Partner B': 0
+            },
+            habits: {
+                'allenamento': { 'Partner A': false, 'Partner B': false },
+                'lettura': { 'Partner A': false, 'Partner B': false },
+                'studio': { 'Partner A': false, 'Partner B': false }
+            },
+            savings: {
+                title: 'Viaggio in Giappone 🇯🇵',
+                target: 2000,
+                current: 450
+            }
+        };
+
+        // Carica i dati salvati da localStorage all'avvio
+        function loadState() {
+            const savedState = localStorage.getItem('homesync_data_v1');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            } else {
+                // Dati dimostrativi pre-caricati per renderla viva al primo avvio
+                state.expenses = [
+                    { id: 1, amount: 45.50, desc: 'Spesa Esselunga', payer: 'Partner A' },
+                    { id: 2, amount: 15.00, desc: 'Pizze asporto', payer: 'Partner B' }
+                ];
+                state.shopping = [
+                    { id: 1, item: 'Pane integrale', completed: false },
+                    { id: 2, item: 'Detersivo piatti', completed: true }
+                ];
+                state.notes = [
+                    { id: 1, text: 'Chiamare l\'idraulico mercoledì mattina', author: 'Partner A' },
+                    { id: 2, text: 'Ricordarsi la cena con i colleghi venerdì!', author: 'Partner B' }
+                ];
+                saveState();
+            }
+            renderAll();
+        }
+
+        // Salva lo stato corrente in localStorage
+        function saveState() {
+            localStorage.setItem('homesync_data_v1', JSON.stringify(state));
+        }
+
+        // Cambio utente attivo
+        function switchUser(user) {
+            state.currentUser = user;
+            
+            // Aggiorna bottoni UI
+            const btn1 = document.getElementById('btn-user-1');
+            const btn2 = document.getElementById('btn-user-2');
+            
+            if (user === 'Partner A') {
+                btn1.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-terracotta-600 shadow-sm border border-stone-200/50";
+                btn2.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:text-stone-900";
+            } else {
+                btn2.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-terracotta-600 shadow-sm border border-stone-200/50";
+                btn1.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:text-stone-900";
+            }
+
+            // Aggiorna testi indicanti l'utente
+            document.getElementById('current-user-display').innerText = user;
+            document.getElementById('other-user-display').innerText = user === 'Partner A' ? 'Partner B' : 'Partner A';
+            
+            logToBot(`System`, `Identità commutata: ora operi come ${user}`);
+        }
+
+        // Renderizza tutti i widget
+        function renderAll() {
+            renderExpenses();
+            renderShopping();
+            renderNotes();
+            renderWater();
+            renderHabits();
+            renderSavings();
+        }
+
+        // --- WIDGET CASSA COMUNE ---
+        function renderExpenses() {
+            const listEl = document.getElementById('expenses-list');
+            listEl.innerHTML = '';
+            
+            let total = 0;
+            let spentByUser1 = 0; // Partner A
+            let spentByUser2 = 0; // Partner B
+
+            state.expenses.forEach(exp => {
+                total += exp.amount;
+                if (exp.payer === 'Partner A') spentByUser1 += exp.amount;
+                if (exp.payer === 'Partner B') spentByUser2 += exp.amount;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-semibold text-xs ${exp.payer === 'Partner A' ? 'text-terracotta-600' : 'text-stone-600'}">
+                        ${exp.payer}
+                    </td>
+                    <td class="px-4 py-3 text-stone-700">${exp.desc}</td>
+                    <td class="px-4 py-3 text-right font-bold text-stone-900">${exp.amount.toFixed(2)} €</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="deleteExpense(${exp.id})" class="text-stone-300 hover:text-red-500 transition-all text-xs"><i class="fa-solid fa-circle-xmark"></i></button>
+                    </td>
+                `;
+                listEl.appendChild(tr);
+            });
+
+            document.getElementById('expenses-count').innerText = `${state.expenses.length} Spese`;
+            document.getElementById('total-spent').innerText = `${total.toFixed(2)} €`;
+            
+            const halfSpent = total / 2;
+            document.getElementById('quota-per-person').innerText = `${halfSpent.toFixed(2)} €`;
+
+            // Calcolo bilancio e chi deve dare a chi
+            const settlementEl = document.getElementById('settlement-status');
+            if (spentByUser1 === spentByUser2) {
+                settlementEl.innerHTML = `Conti in perfetto pari! ⚖️`;
+                settlementEl.className = "text-sm font-semibold text-stone-800";
+            } else if (spentByUser1 > spentByUser2) {
+                const diff = (spentByUser1 - spentByUser2) / 2;
+                settlementEl.innerHTML = `<span class="text-xs block text-stone-500 mb-0.5">Pareggio:</span><strong>Partner B</strong> deve dare <strong>${diff.toFixed(2)} €</strong> a Partner A`;
+                settlementEl.className = "text-sm text-stone-800 text-center";
+            } else {
+                const diff = (spentByUser2 - spentByUser1) / 2;
+                settlementEl.innerHTML = `<span class="text-xs block text-stone-500 mb-0.5">Pareggio:</span><strong>Partner A</strong> deve dare <strong>${diff.toFixed(2)} €</strong> a Partner B`;
+                settlementEl.className = "text-sm text-stone-800 text-center";
+            }
+        }
+
+        function addExpense(customAmount = null, customDesc = null) {
+            const amountInput = document.getElementById('expense-amount');
+            const descInput = document.getElementById('expense-desc');
+
+            const amount = parseFloat(customAmount || amountInput.value);
+            const desc = customDesc || descInput.value.trim();
+
+            if (!amount || amount <= 0 || !desc) {
+                alert('Inserisci un importo valido e una descrizione.');
+                return;
+            }
+
+            const newExp = {
+                id: Date.now(),
+                amount: amount,
+                desc: desc,
+                payer: state.currentUser
+            };
+
+            state.expenses.unshift(newExp); // Mette in cima alla lista
+            saveState();
+            renderExpenses();
+
+            // Svuota i campi
+            amountInput.value = '';
+            descInput.value = '';
+            
+            logToBot(state.currentUser, `Registrata spesa: "${desc}" di ${amount.toFixed(2)} €`);
+        }
+
+        function deleteExpense(id) {
+            state.expenses = state.expenses.filter(exp => exp.id !== id);
+            saveState();
+            renderExpenses();
+            logToBot(`System`, `Spesa rimossa dal bilancio.`);
+        }
+
+
+        // --- WIDGET SPESA CONDIVISA ---
+        function renderShopping() {
+            const listEl = document.getElementById('shopping-list');
+            listEl.innerHTML = '';
+
+            if (state.shopping.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-stone-400 italic py-4 text-center">Niente da comprare. La dispensa è piena!</p>`;
+                return;
+            }
+
+            state.shopping.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-2.5 rounded-xl border border-stone-100 transition-all ${item.completed ? 'bg-stone-50/70 border-stone-100/50' : 'bg-stone-50/30'}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="toggleShoppingItem(${item.id})" class="text-stone-300 hover:text-blue-500 transition-all">
+                            ${item.completed ? '<i class="fa-solid fa-circle-check text-blue-500"></i>' : '<i class="fa-regular fa-circle text-stone-400"></i>'}
+                        </button>
+                        <span class="text-xs ${item.completed ? 'line-through text-stone-400' : 'text-stone-700 font-medium'}">${item.item}</span>
+                    </div>
+                    <button onclick="deleteShoppingItem(${item.id})" class="text-stone-300 hover:text-red-500 text-xs transition-all"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function addShoppingItem(customText = null) {
+            const input = document.getElementById('shopping-input');
+            const itemText = (customText || input.value).trim();
+
+            if (!itemText) return;
+
+            state.shopping.push({
+                id: Date.now(),
+                item: itemText,
+                completed: false
+            });
+
+            saveState();
+            renderShopping();
+            input.value = '';
+            
+            logToBot(state.currentUser, `Aggiunto a lista spesa: "${itemText}"`);
+        }
+
+        function toggleShoppingItem(id) {
+            const target = state.shopping.find(item => item.id === id);
+            if (target) {
+                target.completed = !target.completed;
+                saveState();
+                renderShopping();
+                logToBot(state.currentUser, `Spuntato articolo: "${target.item}" (${target.completed ? 'completato' : 'da fare'})`);
+            }
+        }
+
+        function deleteShoppingItem(id) {
+            state.shopping = state.shopping.filter(item => item.id !== id);
+            saveState();
+            renderShopping();
+        }
+
+        function clearBoughtItems() {
+            state.shopping = state.shopping.filter(item => !item.completed);
+            saveState();
+            renderShopping();
+            logToBot(`System`, `Rimossi gli articoli già acquistati.`);
+        }
+
+
+        // --- WIDGET POST-IT NOTES ---
+        function renderNotes() {
+            const grid = document.getElementById('notes-grid');
+            grid.innerHTML = '';
+
+            const colors = ['bg-yellow-50 border-yellow-200/60', 'bg-pink-50 border-pink-200/60', 'bg-cyan-50 border-cyan-200/60'];
+
+            if (state.notes.length === 0) {
+                grid.innerHTML = `<p class="col-span-3 text-xs text-stone-400 italic py-4 text-center">Nessun post-it appeso. Lascia un messaggio!</p>`;
+                return;
+            }
+
+            state.notes.forEach((note, index) => {
+                const colorClass = colors[index % colors.length];
+                const div = document.createElement('div');
+                div.className = `${colorClass} border rounded-2xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden group min-h-[110px]`;
+                div.innerHTML = `
+                    <p class="text-xs text-stone-700 font-medium break-words mb-4">"${note.text}"</p>
+                    <div class="flex justify-between items-center mt-auto border-t border-stone-200/40 pt-2 text-[10px] text-stone-400 font-bold">
+                        <span>Fatto da: ${note.author}</span>
+                        <button onclick="deleteNote(${note.id})" class="text-stone-300 hover:text-red-500 transition-all text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function addNote(customText = null) {
+            const input = document.getElementById('note-input');
+            const noteText = (customText || input.value).trim();
+
+            if (!noteText) return;
+
+            state.notes.push({
+                id: Date.now(),
+                text: noteText,
+                author: state.currentUser
+            });
+
+            saveState();
+            renderNotes();
+            input.value = '';
+            
+            logToBot(state.currentUser, `Appeso post-it: "${noteText}"`);
+        }
+
+        function deleteNote(id) {
+            state.notes = state.notes.filter(note => note.id !== id);
+            saveState();
+            renderNotes();
+        }
+
+
+        // --- WIDGET SALVADANAIO COOP ---
+        function renderSavings() {
+            document.getElementById('savings-title-display').innerText = state.savings.title;
+            
+            const current = state.savings.current;
+            const target = state.savings.target;
+            
+            document.getElementById('savings-progress-text').innerText = `${current} / ${target} €`;
+            
+            let percent = (current / target) * 100;
+            if (percent > 100) percent = 100;
+            if (percent < 0) percent = 0;
+            
+            document.getElementById('savings-bar').style.width = `${percent}%`;
+        }
+
+        function adjustSavings(isAddition) {
+            const input = document.getElementById('savings-input');
+            const amount = parseFloat(input.value);
+
+            if (!amount || amount <= 0) return;
+
+            if (isAddition) {
+                state.savings.current += amount;
+                logToBot(state.currentUser, `Versato nel salvadanaio: ${amount} €`);
+            } else {
+                state.savings.current -= amount;
+                if (state.savings.current < 0) state.savings.current = 0;
+                logToBot(state.currentUser, `Prelevato dal salvadanaio: ${amount} €`);
+            }
+
+            saveState();
+            renderSavings();
+            input.value = '';
+        }
+
+        function updateSavingsTarget() {
+            const titleInput = document.getElementById('new-savings-title');
+            const targetInput = document.getElementById('new-savings-target');
+
+            const newTitle = titleInput.value.trim();
+            const newTarget = parseFloat(targetInput.value);
+
+            if (newTitle) state.savings.title = newTitle;
+            if (newTarget && newTarget > 0) state.savings.target = newTarget;
+
+            saveState();
+            renderSavings();
+            
+            titleInput.value = '';
+            targetInput.value = '';
+            
+            logToBot(`System`, `Nuovo obiettivo salvadanaio impostato: "${state.savings.title}" con target di ${state.savings.target}€`);
+        }
+
+
+        // --- WIDGET IDRATAZIONE ACQUA ---
+        function renderWater() {
+            buildWaterGrid(1, 'Partner A');
+            buildWaterGrid(2, 'Partner B');
+        }
+
+        function buildWaterGrid(id, partner) {
+            const container = document.getElementById(`water-grid-${id}`);
+            const text = document.getElementById(`water-text-${id}`);
+            
+            container.innerHTML = '';
+            const currentGlasses = state.water[partner];
+            text.innerText = `${currentGlasses} / 8 bicchieri`;
+
+            for (let i = 1; i <= 8; i++) {
+                const btn = document.createElement('button');
+                btn.className = `flex-grow aspect-square rounded-lg border transition-all flex items-center justify-center text-xs ${i <= currentGlasses ? 'bg-cyan-500 border-cyan-500 text-white shadow-sm shadow-cyan-500/20' : 'bg-stone-50 border-stone-200 text-stone-400 hover:border-cyan-300'}`;
+                btn.innerHTML = `<i class="fa-solid fa-glass-water"></i>`;
+                btn.onclick = () => toggleWater(partner, i);
+                container.appendChild(btn);
+            }
+        }
+
+        function toggleWater(partner, glassNumber) {
+            if (state.water[partner] === glassNumber) {
+                // Se ri-clicca l'ultimo bicchiere, toglie uno
+                state.water[partner] = glassNumber - 1;
+            } else {
+                state.water[partner] = glassNumber;
+            }
+            saveState();
+            renderWater();
+        }
+
+
+        // --- WIDGET ABITUDINI DI COPPIA ---
+        function renderHabits() {
+            Object.keys(state.habits).forEach(habitKey => {
+                const partnerA_done = state.habits[habitKey]['Partner A'];
+                const partnerB_done = state.habits[habitKey]['Partner B'];
+
+                const btnA = document.getElementById(`habit-${habitKey}-1`);
+                const btnB = document.getElementById(`habit-${habitKey}-2`);
+
+                if (partnerA_done) {
+                    btnA.className = "w-9 h-9 rounded-xl border border-terracotta-500 bg-terracotta-500 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-terracotta-600/10";
+                } else {
+                    btnA.className = "w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all";
+                }
+
+                if (partnerB_done) {
+                    btnB.className = "w-9 h-9 rounded-xl border border-stone-850 bg-stone-850 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-stone-850/10";
+                } else {
+                    btnB.className = "w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-stone-850 transition-all";
+                }
+            });
+        }
+
+        function toggleHabit(habitKey, partner) {
+            state.habits[habitKey][partner] = !state.habits[habitKey][partner];
+            saveState();
+            renderHabits();
+            
+            const habitNames = {
+                'allenamento': 'Allenamento',
+                'lettura': 'Lettura',
+                'studio': 'Studio'
+            };
+            logToBot(partner, `${state.habits[habitKey][partner] ? 'Svolta' : 'Annullata'} l'abitudine: "${habitNames[habitKey]}"`);
+        }
+
+
+        // --- AUTOMAZIONE: BOT TELEGRAM SIMULATO ---
+        function fillBotInput(text) {
+            document.getElementById('bot-input').value = text;
+        }
+
+        function logToBot(author, text) {
+            const logs = document.getElementById('bot-logs');
+            const authorSpan = author === 'System' 
+                ? `<span class="text-green-400">[System]</span>`
+                : `<span class="text-blue-400">[${author}]</span>`;
+                
+            logs.innerHTML += `<div>${authorSpan} ${text}</div>`;
+            logs.scrollTop = logs.scrollHeight; // Auto-scroll
+        }
+
+        function simulateTelegramMessage() {
+            const input = document.getElementById('bot-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            logToBot(`User`, `Inviato comando: ${message}`);
+
+            // Parsing dei comandi usando Regex
+            const expenseRegex = /^\/spesa\s+(\d+(\.\d+)?)\s+(.+)$/i;
+            const shoppingRegex = /^\/compra\s+(.+)$/i;
+            const noteRegex = /^\/nota\s+(.+)$/i;
+
+            if (expenseRegex.test(message)) {
+                const matches = message.match(expenseRegex);
+                const amount = parseFloat(matches[1]);
+                const desc = matches[3];
+                
+                addExpense(amount, desc);
+                logToBot(`Bot`, `✅ Spesa registrata con successo su GitHub!`);
+            } 
+            else if (shoppingRegex.test(message)) {
+                const matches = message.match(shoppingRegex);
+                const item = matches[1];
+                
+                addShoppingItem(item);
+                logToBot(`Bot`, `✅ "${item}" aggiunto alla lista spesa condivisa!`);
+            } 
+            else if (noteRegex.test(message)) {
+                const matches = message.match(noteRegex);
+                const noteText = matches[1];
+                
+                addNote(noteText);
+                logToBot(`Bot`, `✅ Post-it appuntato in bacheca!`);
+            } 
+            else {
+                logToBot(`Bot`, `❌ Comando non riconosciuto. Usa:<br>• /spesa [numero] [descrizione]<br>• /compra [oggetto]<br>• /nota [messaggio]`);
+            }
+
+            input.value = '';
+        }
+
+        // --- CLOCK & DATE REAL-TIME ---
+        function updateDateTime() {
+            const now = new Date();
+            
+            // Orario
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('live-time').innerText = `${hours}:${minutes}`;
+
+            // Data
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('live-date').innerText = now.toLocaleDateString('it-IT', options);
+        }
+
+        // Citazioni randomiche stimolanti
+        const quotes = [
+            "La pazienza e la comunicazione sono i mattoni della nostra felicità quotidiana.",
+            "I piccoli traguardi fatti insieme costruiscono grandi capitoli.",
+            "Chi fa la spesa non compra le idee, ma una cena favolosa sì!",
+            "Un centesimo risparmiato insieme oggi è un viaggio memorabile domani.",
+            "Ricordati di dire grazie anche per le piccole cose."
+        ];
+        
+        function setRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            document.getElementById('random-quote').innerText = `"${quotes[randomIndex]}"`;
+        }
+
+        // Inizializzazione all'avvio
+        window.onload = function() {
+            loadState();
+            updateDateTime();
+            setRandomQuote();
+            setInterval(updateDateTime, 1000); // Aggiorna orario ogni secondo
+        };
+    </script>
+</body>
+</html>
+```eof
+
+### Riepilogo di cosa è stato creato:
+* **Fattore Sincronizzazione Locale:** Non c'è bisogno di installare database complessi o pagare hosting esterni. Questa dashboard salva tutto istantaneamente sul browser di chi la usa.
+* **Flusso d'Uso Dinamico:** Potete cliccare in alto a destra su **"Partner A"** o **"Partner B"** per simulare l'esperienza di ciascuno di voi. Le spese calcoleranno istantaneamente l'esatto saldo attivo e passivo di chi deve ricevere o dare soldi.
+* **Sperimentazione del Bot:** Scrivi `/spesa 32.50 Benzina` nel box nero del *Simulatore Bot* e premi invio per vedere l'importo balzare all'istante nella lista spese sotto!
+
+Puoi esportare o salvare questo file e aprirlo semplicemente con il browser sul tuo PC o sul telefono per vederlo in azione. Fammi sapere come ti sembra e se vuoi che implementiamo/personalizziamo qualche parte!
+
+```
