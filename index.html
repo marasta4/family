@@ -1,933 +1,1464 @@
-Ecco una vera e propria **applicazione web interattiva pronta all'uso** (in un unico file HTML).
-
-Si chiama **HomeSync Hub**. È una dashboard di coppia moderna, calda ed elegante, progettata per essere utilizzata sia da PC che da smartphone.
-
-### Cosa fa questa Dashboard (Tutte le funzioni attive):
-
-1. **Cassa Comune & Spese:** Inserisci le spese, scegli chi ha pagato e la dashboard calcolerà **in tempo reale** chi deve quanto a chi, aggiornando un grafico a barre di contribuzione.
-2. **Lista della Spesa Dinamica:** Aggiungi elementi, spuntali al supermercato (verranno sbarrati) e ripulisci la lista con un click.
-3. **Bacheca delle Note:** Create e "appiccicate" post-it digitali per non dimenticare nulla.
-4. **Salvadanaio & Obiettivi:** Impostate un traguardo di risparmio comune (es. un viaggio) e monitorate la barra di progresso interattiva.
-5. **Tracker Acqua e Abitudini:** Monitorate i bicchieri d'acqua della giornata e spuntate le vostre abitudini quotidiane separatamente.
-6. **🤖 SIMULATORE TELEGRAM BOT (Esclusivo!):** Per farti capire come funzionerà l'automatismo reale, ho inserito un widget speciale sulla barra laterale. Puoi digitare comandi reali (es: `/spesa 15 Pizza` o `/compra Latte`) per vedere la dashboard popolarsi all'istante senza toccare i widget a mano!
-
-Tutti i dati si **salvano automaticamente nel browser (localStorage)**: se ricarichi la pagina o la riapri domani, ritroverai tutto esattamente come lo hai lasciato.
-
-```html:homesync_dashboard.html
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HomeSync Hub - Dashboard di Coppia</title>
-    <!-- Tailwind CSS per layout moderno e responsive -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        stone: {
-                            850: '#201c1a',
-                        },
-                        terracotta: {
-                            50: '#fdf8f5',
-                            100: '#fbeee6',
-                            500: '#d95d39',
-                            600: '#c2410c',
-                            700: '#9a3412',
-                        }
-                    },
-                    fontFamily: {
-                        playfair: ['"Playfair Display"', 'serif'],
-                        sans: ['"Inter"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #faf9f6;
-            background-image: 
-                radial-gradient(circle at 100% 0%, rgba(217, 93, 57, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 0% 100%, rgba(194, 65, 12, 0.03) 0%, transparent 40%);
-        }
-        .font-serif {
-            font-family: 'Playfair Display', serif;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #e7e5e4;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #d6d3d1;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HomeSync">
+<title>HomeSync Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;1,300;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+  --c1: #1a1614;
+  --c2: #2d2825;
+  --c3: #3d3731;
+  --accent: #e8623a;
+  --accent2: #f0956b;
+  --accent-light: #fdf1eb;
+  --gold: #c9a84c;
+  --sage: #6b8f71;
+  --sage-light: #edf3ee;
+  --sky: #4a8fa8;
+  --sky-light: #eaf4f8;
+  --lavender: #7c6fa0;
+  --lav-light: #f2f0f8;
+  --warm-bg: #faf8f5;
+  --card-bg: #ffffff;
+  --card-border: rgba(45,40,37,0.09);
+  --text: #1a1614;
+  --text-muted: #7a6f68;
+  --text-light: #b0a49c;
+  --border: rgba(45,40,37,0.1);
+  --radius: 20px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 3px rgba(26,22,20,0.06), 0 4px 16px rgba(26,22,20,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--warm-bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.font-serif { font-family: 'Fraunces', serif; }
+
+/* ---- NAV ---- */
+#app-header {
+  background: rgba(250,248,245,0.88);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  padding: 12px 16px 10px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+.header-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo-wrap { display: flex; align-items: center; gap: 10px; }
+.logo-icon { background: var(--accent); color: #fff; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.app-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 700; color: var(--c1); letter-spacing: -0.3px; }
+.app-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.user-pill { display: flex; align-items: center; background: rgba(255,255,255,0.7); border: 1px solid var(--border); border-radius: 50px; padding: 3px 4px; gap: 3px; }
+.user-btn { padding: 5px 11px; border-radius: 50px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; background: transparent; color: var(--text-muted); }
+.user-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(232,98,58,0.3); }
+.settings-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); width: 38px; height: 38px; border-radius: 12px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.settings-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent2); }
+
+/* ---- BOTTOM NAV ---- */
+#bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 99;
+  background: rgba(250,248,245,0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px 10px; cursor: pointer; border: none; background: none; color: var(--text-light); font-size: 10px; font-weight: 500; transition: all .2s; gap: 4px; }
+.nav-item i { font-size: 20px; }
+.nav-item.active { color: var(--accent); }
+.nav-item.active i { transform: scale(1.1); }
+
+/* ---- PAGES ---- */
+.page { display: none; padding: 20px 16px; max-width: 900px; margin: 0 auto; padding-bottom: 90px; }
+.page.active { display: block; }
+@media(min-width: 600px) { .page { padding: 28px 24px 100px; } }
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 500; color: var(--c1); display: flex; align-items: center; gap: 9px; }
+.card-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.card-icon.amber { background: #fef3c7; color: #d97706; }
+.card-icon.sage { background: var(--sage-light); color: var(--sage); }
+.card-icon.sky { background: var(--sky-light); color: var(--sky); }
+.card-icon.lav { background: var(--lav-light); color: var(--lavender); }
+.card-icon.coral { background: var(--accent-light); color: var(--accent); }
+.card-icon.pink { background: #fdf2f8; color: #db2777; }
+.card-icon.gold { background: #fefce8; color: var(--gold); }
+.card-icon.red { background: #fef2f2; color: #ef4444; }
+
+/* ---- INPUTS ---- */
+.input-row { display: flex; gap: 8px; }
+input[type=text], input[type=number], textarea, select {
+  background: #f8f6f3;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent2); background: #fff; }
+textarea { resize: vertical; min-height: 70px; }
+.btn { border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #d4562e; }
+.btn-sage { background: var(--sage); color: #fff; }
+.btn-sage:hover { background: #5a7a60; }
+.btn-sky { background: var(--sky); color: #fff; }
+.btn-sky:hover { background: #3a7a92; }
+.btn-ghost { background: #f0ece8; color: var(--text-muted); }
+.btn-ghost:hover { background: #e5e0db; }
+.btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 10px; }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+.btn-danger:hover { background: #fecaca; }
+
+/* ---- GRID ---- */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+@media(max-width: 480px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+
+/* ---- STAT CARDS ---- */
+.stat-card { background: #f8f6f3; border-radius: var(--radius-sm); padding: 14px 12px; text-align: center; }
+.stat-label { font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.stat-value { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; color: var(--c1); }
+
+/* ---- PROGRESS BAR ---- */
+.progress-track { background: #f0ece8; border-radius: 50px; height: 10px; overflow: hidden; margin: 8px 0; }
+.progress-fill { height: 100%; border-radius: 50px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+.progress-fill.sage { background: var(--sage); }
+.progress-fill.accent { background: var(--accent); }
+.progress-fill.sky { background: var(--sky); }
+.progress-fill.gold { background: var(--gold); }
+
+/* ---- TOGGLE / HABIT BUTTONS ---- */
+.habit-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; background: #f8f6f3; border-radius: var(--radius-sm); margin-bottom: 8px; }
+.habit-info h4 { font-size: 14px; font-weight: 600; color: var(--c1); }
+.habit-info p { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.habit-btns { display: flex; gap: 7px; }
+.hab-btn { width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--border); background: white; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; color: var(--text-muted); }
+.hab-btn.done-a { background: var(--accent); border-color: var(--accent); color: white; }
+.hab-btn.done-b { background: var(--c2); border-color: var(--c2); color: white; }
+
+/* ---- WATER GLASSES ---- */
+.water-section { margin-bottom: 14px; }
+.water-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.water-dots { display: flex; gap: 7px; }
+.water-dot { width: 32px; height: 36px; border-radius: 8px; border: 1.5px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-light); transition: all .2s; }
+.water-dot.filled { background: var(--sky-light); border-color: var(--sky); color: var(--sky); }
+
+/* ---- SHOPPING LIST ---- */
+.shop-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f8f6f3; border-radius: var(--radius-sm); margin-bottom: 7px; }
+.shop-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 11px; transition: all .2s; }
+.shop-check.done { background: var(--sky); border-color: var(--sky); color: white; }
+.shop-text { flex: 1; font-size: 14px; color: var(--text); }
+.shop-text.done { text-decoration: line-through; color: var(--text-light); }
+.shop-del { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 14px; padding: 4px; transition: color .2s; }
+.shop-del:hover { color: #ef4444; }
+
+/* ---- NOTES ---- */
+.note-card { border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; position: relative; }
+.note-card.yellow { background: #fef9c3; }
+.note-card.pink { background: #fce7f3; }
+.note-card.blue { background: var(--sky-light); }
+.note-card.green { background: var(--sage-light); }
+.note-text { font-size: 13px; color: var(--c2); line-height: 1.5; }
+.note-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+.note-del { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 14px; padding: 4px; }
+
+/* ---- EXPENSES TABLE ---- */
+.exp-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.exp-row:last-child { border-bottom: none; }
+.exp-avatar { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.exp-desc { flex: 1; font-size: 14px; color: var(--text); }
+.exp-sub { font-size: 11px; color: var(--text-muted); }
+.exp-amount { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; color: var(--c1); }
+.exp-del { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 13px; transition: color .2s; padding: 4px; }
+.exp-del:hover { color: #ef4444; }
+
+/* ---- SETTLEMENT BOX ---- */
+.settlement-box { background: var(--accent-light); border: 1px solid rgba(232,98,58,0.15); border-radius: var(--radius-sm); padding: 13px 14px; text-align: center; }
+.settlement-box.ok { background: var(--sage-light); border-color: rgba(107,143,113,0.2); }
+.settlement-text { font-size: 13px; color: var(--text); }
+.settlement-text strong { color: var(--accent); }
+.settlement-box.ok .settlement-text strong { color: var(--sage); }
+
+/* ---- QUOTE CARD ---- */
+.quote-card { background: var(--c1); border-radius: var(--radius); padding: 24px; color: white; margin-bottom: 16px; position: relative; overflow: hidden; }
+.quote-bg-char { position: absolute; right: -10px; top: -20px; font-family: 'Fraunces', serif; font-size: 140px; color: rgba(255,255,255,0.04); line-height: 1; pointer-events: none; }
+.quote-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent2); margin-bottom: 12px; }
+.quote-text { font-family: 'Fraunces', serif; font-size: 17px; font-style: italic; font-weight: 300; color: rgba(255,255,255,0.9); line-height: 1.5; }
+.quote-author { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 12px; text-align: right; }
+
+/* ---- MEAL IDEAS ---- */
+.meal-card { background: linear-gradient(135deg, #fff8f5 0%, #fdf1eb 100%); border: 1px solid rgba(232,98,58,0.12); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 8px; }
+.meal-tag { display: inline-block; background: var(--accent-light); color: var(--accent); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 50px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px; }
+.meal-name { font-size: 15px; font-weight: 600; color: var(--c1); margin-bottom: 3px; }
+.meal-sub { font-size: 12px; color: var(--text-muted); }
+.meal-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); font-size: 11px; padding: 5px 10px; cursor: pointer; margin-top: 8px; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+.meal-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- TODO ---- */
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px; background: #f8f6f3; border-radius: var(--radius-sm); margin-bottom: 8px; }
+.todo-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 1px; font-size: 11px; transition: all .2s; }
+.todo-check.done { background: var(--sage); border-color: var(--sage); color: white; }
+.todo-content { flex: 1; }
+.todo-text { font-size: 14px; color: var(--text); line-height: 1.3; }
+.todo-text.done { text-decoration: line-through; color: var(--text-light); }
+.todo-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.todo-priority { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.priority-high { background: #ef4444; }
+.priority-mid { background: var(--gold); }
+.priority-low { background: var(--sage); }
+.todo-del { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 13px; padding: 4px; }
+.todo-del:hover { color: #ef4444; }
+
+/* ---- STATS ---- */
+.streak-badge { display: flex; align-items: center; gap: 6px; background: var(--accent-light); border-radius: 50px; padding: 6px 13px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.leaderboard-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.leaderboard-row:last-child { border-bottom: none; }
+.rank-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.rank-1 { background: #fef9c3; color: var(--gold); }
+.rank-2 { background: #f1f5f9; color: #64748b; }
+.rank-3 { background: #fff7ed; color: #ea580c; }
+.chart-bar-wrap { display: flex; align-items: flex-end; gap: 8px; height: 80px; margin-top: 12px; }
+.chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 100%; border-radius: 6px 6px 0 0; transition: height .4s; }
+.chart-bar-label { font-size: 10px; color: var(--text-muted); }
+.chart-bar-val { font-size: 11px; font-weight: 600; color: var(--text); }
+
+/* ---- BOT SIMULATOR ---- */
+.bot-panel { background: var(--c1); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; color: white; }
+.bot-log { background: rgba(255,255,255,0.06); border-radius: var(--radius-sm); padding: 10px 12px; font-family: monospace; font-size: 12px; color: rgba(255,255,255,0.75); max-height: 100px; overflow-y: auto; margin-bottom: 10px; }
+.bot-input-row { display: flex; gap: 8px; }
+.bot-input-row input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: white; font-family: monospace; }
+.bot-input-row input::placeholder { color: rgba(255,255,255,0.35); }
+.bot-input-row input:focus { background: rgba(255,255,255,0.15); border-color: var(--accent2); }
+.bot-chips { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 4px; }
+.bot-chip { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: rgba(255,255,255,0.6); font-size: 10px; font-family: monospace; padding: 4px 8px; cursor: pointer; white-space: nowrap; transition: background .15s; flex-shrink: 0; }
+.bot-chip:hover { background: rgba(255,255,255,0.14); }
+
+/* ---- SETTINGS MODAL ---- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(26,22,20,0.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet { background: var(--card-bg); border-radius: 24px 24px 0 0; padding: 0; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; transform: translateY(40px); transition: transform .3s cubic-bezier(.4,0,.2,1); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 4px; margin: 14px auto 0; }
+.modal-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; color: var(--c1); padding: 20px 20px 4px; }
+.modal-section { padding: 16px 20px; border-top: 1px solid var(--border); }
+.modal-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--text-muted); margin-bottom: 12px; }
+.setting-row { margin-bottom: 12px; }
+.setting-label { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+
+/* ---- DATE/TIME BAR ---- */
+.datetime-bar { display: flex; align-items: center; gap: 14px; background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; }
+.datetime-date { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; color: var(--c1); }
+.datetime-time { font-size: 15px; color: var(--text-muted); font-weight: 600; margin-left: auto; }
+.datetime-weather { font-size: 13px; color: var(--text-muted); }
+
+/* ---- CALENDAR EVENTS ---- */
+.cal-event { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f8f6f3; border-radius: var(--radius-sm); margin-bottom: 7px; border-left: 3px solid var(--accent); }
+.cal-event.sage { border-left-color: var(--sage); }
+.cal-event.sky { border-left-color: var(--sky); }
+.cal-event.gold { border-left-color: var(--gold); }
+.cal-time { font-size: 12px; font-weight: 700; color: var(--text-muted); width: 44px; flex-shrink: 0; }
+.cal-title { font-size: 13px; font-weight: 500; color: var(--c1); }
+.cal-sub { font-size: 11px; color: var(--text-muted); }
+
+/* ---- SAVINGS SECTIONS ---- */
+.savings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.savings-name { font-size: 15px; font-weight: 600; color: var(--c1); }
+.savings-vals { font-size: 12px; color: var(--text-muted); }
+.savings-pct { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; color: var(--sage); }
+
+/* ---- TRANSITIONS ---- */
+.card { animation: fadeUp .3s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- TAG/BADGE ---- */
+.badge { display: inline-block; padding: 3px 9px; border-radius: 50px; font-size: 11px; font-weight: 600; }
+.badge-accent { background: var(--accent-light); color: var(--accent); }
+.badge-sage { background: var(--sage-light); color: var(--sage); }
+.badge-sky { background: var(--sky-light); color: var(--sky); }
+.badge-gold { background: #fefce8; color: #a16207; }
+
+/* ---- CALENDAR SYNC NOTE ---- */
+.cal-sync-note { background: var(--lav-light); border: 1px solid rgba(124,111,160,0.2); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--lavender); display: flex; gap: 8px; align-items: flex-start; }
+.cal-sync-note i { flex-shrink: 0; font-size: 15px; margin-top: 1px; }
+
+/* ---- RESPONSIVE ---- */
+@media(min-width: 600px) {
+  .grid-home { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-home .full { grid-column: 1 / -1; }
+}
+</style>
 </head>
-<body class="min-height-screen text-stone-800 pb-12">
-
-    <!-- TOP NAVIGATION BAR -->
-    <header class="border-b border-stone-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-terracotta-600 text-white p-2 rounded-xl shadow-md shadow-terracotta-600/20">
-                    <i class="fa-solid fa-house-chimney-heart text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-serif font-bold text-stone-900">HomeSync Hub</h1>
-                    <p class="text-xs text-stone-500 font-medium">Il vostro spazio digitale condiviso</p>
-                </div>
-            </div>
-
-            <!-- Active User Switcher (Simula l'uso di uno o dell'altro partner) -->
-            <div class="flex items-center gap-3 bg-stone-100 p-1.5 rounded-2xl border border-stone-200">
-                <span class="text-xs font-semibold text-stone-500 pl-2">Stai usando come:</span>
-                <button id="btn-user-1" onclick="switchUser('Partner A')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-terracotta-600 shadow-sm border border-stone-200/50">
-                    <i class="fa-solid fa-circle-user mr-1.5"></i>Partner A
-                </button>
-                <button id="btn-user-2" onclick="switchUser('Partner B')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:text-stone-900">
-                    <i class="fa-solid fa-circle-user mr-1.5"></i>Partner B
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-8">
-        
-        <!-- INTRO GREETINGS & METEO BANNER -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="md:col-span-2 bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                <div class="absolute right-0 top-0 translate-x-12 -translate-y-6 text-stone-100/40 text-9xl font-serif pointer-events-none">“</div>
-                <div>
-                    <h2 class="text-3xl font-serif text-stone-900 mb-2">Ciao <span id="current-user-display" class="text-terracotta-600 font-bold">Partner A</span> & <span id="other-user-display">Partner B</span>!</h2>
-                    <p class="text-stone-600 text-sm max-w-lg">Bentornati nel vostro centro di controllo. Sotto trovi lo stato sincronizzato delle spese, della spesa e dei vostri obiettivi comuni.</p>
-                </div>
-                <div class="mt-6 flex flex-wrap gap-4 items-center text-xs text-stone-500 border-t border-stone-100 pt-4">
-                    <span><i class="fa-solid fa-calendar-day text-terracotta-500 mr-1"></i> <span id="live-date">Caricamento...</span></span>
-                    <span><i class="fa-solid fa-clock text-terracotta-500 mr-1"></i> <span id="live-time">00:00</span></span>
-                    <span><i class="fa-solid fa-cloud-sun text-terracotta-500 mr-1"></i> Roma, 22°C (Sereno)</span>
-                </div>
-            </div>
-
-            <!-- SIMULATORE TELEGRAM BOT -->
-            <div class="bg-stone-900 text-stone-100 border border-stone-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-                <div class="absolute -right-8 -bottom-8 text-stone-800 text-8xl pointer-events-none">
-                    <i class="fa-brands fa-telegram"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase">Simulatore</span>
-                    <h3 class="text-sm font-bold uppercase tracking-wider text-stone-400">Bot Telegram di Coppia</h3>
-                </div>
-                <p class="text-xs text-stone-400 mb-4">Prova a inviare comandi rapidi come se fossi in chat su Telegram!</p>
-                
-                <div class="space-y-3">
-                    <div class="bg-stone-850 p-2.5 rounded-xl border border-stone-800 text-[11px] font-mono text-stone-300 max-h-24 overflow-y-auto" id="bot-logs">
-                        <div><span class="text-green-400">[System]</span> Bot pronto per ricevere input.</div>
-                    </div>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="bot-input" placeholder="Es: /spesa 14 Pizza" class="bg-stone-850 text-white placeholder-stone-500 text-xs px-3 py-2.5 rounded-xl border border-stone-800 focus:outline-none focus:border-terracotta-500 flex-grow font-mono">
-                        <button onclick="simulateTelegramMessage()" class="bg-terracotta-500 hover:bg-terracotta-600 text-white font-bold px-4 rounded-xl transition-all text-xs">Invia</button>
-                    </div>
-                </div>
-                <div class="mt-3 flex gap-2 overflow-x-auto pb-1">
-                    <button onclick="fillBotInput('/spesa 15 Pizza')" class="text-[10px] bg-stone-800 hover:bg-stone-750 text-stone-300 px-2.5 py-1 rounded-lg border border-stone-700 shrink-0 font-mono">/spesa 15 Pizza</button>
-                    <button onclick="fillBotInput('/compra Latte intero')" class="text-[10px] bg-stone-800 hover:bg-stone-750 text-stone-300 px-2.5 py-1 rounded-lg border border-stone-700 shrink-0 font-mono">/compra Latte</button>
-                    <button onclick="fillBotInput('/nota Chiamare idraulico')" class="text-[10px] bg-stone-800 hover:bg-stone-750 text-stone-300 px-2.5 py-1 rounded-lg border border-stone-700 shrink-0 font-mono">/nota Idraulico</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- MAIN DASHBOARD GRID -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- COLUMN 1: CASSA COMUNE -->
-            <div class="lg:col-span-2 space-y-8">
-                
-                <!-- WIDGET 1: CASSA COMUNE & RENDICONTO -->
-                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2.5">
-                            <span class="p-2 bg-amber-50 text-amber-600 rounded-xl"><i class="fa-solid fa-wallet"></i></span>
-                            <h3 class="text-xl font-serif font-bold text-stone-900">Cassa Comune & Bilancio</h3>
-                        </div>
-                        <span class="text-xs font-semibold px-2.5 py-1 bg-stone-100 rounded-full text-stone-600" id="expenses-count">0 Spese</span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-center">
-                            <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider">Totale Speso</span>
-                            <div class="text-2xl font-serif font-bold text-stone-900 mt-1" id="total-spent">0.00 €</div>
-                        </div>
-                        <div class="bg-stone-50 border border-stone-100 rounded-2xl p-4 text-center">
-                            <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider">Quota a Testa</span>
-                            <div class="text-2xl font-serif font-bold text-stone-900 mt-1" id="quota-per-person">0.00 €</div>
-                        </div>
-                        <!-- CHI DEVE A CHI (STATO DI PAREGGIO) -->
-                        <div class="bg-terracotta-50/70 border border-terracotta-100 rounded-2xl p-4 text-center flex flex-col justify-center items-center">
-                            <span class="text-xs font-semibold text-terracotta-600 uppercase tracking-wider mb-1">Stato dei Conti</span>
-                            <div class="text-sm font-semibold text-stone-800" id="settlement-status">Conti in perfetto pari! ⚖️</div>
-                        </div>
-                    </div>
-
-                    <!-- NUOVA SPESA FORM -->
-                    <div class="bg-stone-50/50 p-4 rounded-2xl border border-stone-100 mb-6">
-                        <h4 class="text-xs font-bold text-stone-600 uppercase tracking-wider mb-3">Registra Spesa a Mano</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <input type="number" id="expense-amount" placeholder="Importo (€)" class="bg-white text-stone-800 text-sm px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-terracotta-500">
-                            <input type="text" id="expense-desc" placeholder="Descrizione (es: Spesa Conad)" class="bg-white text-stone-800 text-sm px-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-terracotta-500">
-                            <button onclick="addExpense()" class="bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all">Aggiungi Spesa</button>
-                        </div>
-                    </div>
-
-                    <!-- TABELLA DELLE ULTIME SPESE -->
-                    <div class="overflow-hidden border border-stone-100 rounded-2xl">
-                        <div class="max-h-56 overflow-y-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-stone-50 text-stone-500 text-xs uppercase sticky top-0">
-                                    <tr>
-                                        <th class="px-4 py-3">Chi</th>
-                                        <th class="px-4 py-3">Descrizione</th>
-                                        <th class="px-4 py-3 text-right">Importo</th>
-                                        <th class="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="expenses-list" class="divide-y divide-stone-100">
-                                    <!-- Popolato da JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- WIDGET 2: BUDGET SALVADANAIO & COSE DA COMPRARE -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    
-                    <!-- SALVADANAIO TRAGUARDO -->
-                    <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center gap-2">
-                                    <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa-solid fa-piggy-bank"></i></span>
-                                    <h3 class="text-lg font-serif font-bold text-stone-900">Salvadanaio Comune</h3>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <div class="flex justify-between items-end mb-1">
-                                    <span class="text-xs text-stone-500 font-semibold" id="savings-title-display">Viaggio in Giappone 🇯🇵</span>
-                                    <span class="text-xs text-stone-700 font-bold" id="savings-progress-text">0 / 0 €</span>
-                                </div>
-                                <div class="w-full bg-stone-100 h-3.5 rounded-full overflow-hidden border border-stone-200/50">
-                                    <div id="savings-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3 pt-4 border-t border-stone-100">
-                            <div class="flex gap-2">
-                                <input type="number" id="savings-input" placeholder="Importo (€)" class="bg-stone-50 text-stone-800 text-xs px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-emerald-500 flex-grow">
-                                <button onclick="adjustSavings(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-plus"></i> Versa</button>
-                                <button onclick="adjustSavings(false)" class="bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-minus"></i> Preleva</button>
-                            </div>
-                            
-                            <!-- Opzione per cambiare l'obiettivo -->
-                            <details class="text-xs text-stone-500">
-                                <summary class="cursor-pointer hover:text-stone-700 select-none">Modifica obiettivo salvadanaio</summary>
-                                <div class="mt-2 space-y-2 p-2 bg-stone-50 rounded-xl border border-stone-100">
-                                    <input type="text" id="new-savings-title" placeholder="Nome obiettivo (es: Nuovo Divano)" class="w-full bg-white text-xs px-2 py-1.5 rounded-lg border border-stone-200 focus:outline-none">
-                                    <input type="number" id="new-savings-target" placeholder="Cifra target (€)" class="w-full bg-white text-xs px-2 py-1.5 rounded-lg border border-stone-200 focus:outline-none">
-                                    <button onclick="updateSavingsTarget()" class="w-full bg-stone-800 hover:bg-stone-900 text-white text-[10px] font-bold py-1.5 rounded-lg">Salva Nuovo Obiettivo</button>
-                                </div>
-                            </details>
-                        </div>
-                    </div>
-
-                    <!-- COSE DA COMPRARE (SHOPPING LIST) -->
-                    <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex items-center gap-2">
-                                    <span class="p-2 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-cart-shopping"></i></span>
-                                    <h3 class="text-lg font-serif font-bold text-stone-900">Spesa Condivisa</h3>
-                                </div>
-                                <button onclick="clearBoughtItems()" class="text-xs text-stone-400 hover:text-stone-600" title="Rimuovi elementi completati"><i class="fa-solid fa-trash-can"></i></button>
-                            </div>
-
-                            <div class="space-y-2 max-h-40 overflow-y-auto pr-1" id="shopping-list">
-                                <!-- Popolato da JS -->
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2 pt-4 border-t border-stone-100 mt-4">
-                            <input type="text" id="shopping-input" placeholder="Aggiungi es: Latte, Uova" class="bg-stone-50 text-stone-800 text-xs px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-blue-500 flex-grow">
-                            <button onclick="addShoppingItem()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 rounded-xl transition-all">Aggiungi</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- WIDGET 3: NOTE CONDIVISE (STICKY NOTES) -->
-                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center gap-2.5">
-                            <span class="p-2 bg-pink-50 text-pink-600 rounded-xl"><i class="fa-solid fa-thumbtack"></i></span>
-                            <h3 class="text-xl font-serif font-bold text-stone-900">Bacheca dei Post-it</h3>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" id="notes-grid">
-                        <!-- Popolato da JS -->
-                    </div>
-
-                    <div class="flex gap-2">
-                        <input type="text" id="note-input" placeholder="Lascia un messaggio o una nota veloce per entrambi..." class="bg-stone-50 text-stone-800 text-sm px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:border-pink-500 flex-grow">
-                        <button onclick="addNote()" class="bg-pink-600 hover:bg-pink-700 text-white font-bold text-sm px-6 rounded-xl transition-all">Appicca Nota</button>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- COLUMN 2: SIDEBAR (WELL-BEING & ABITUDINI) -->
-            <div class="space-y-8">
-                
-                <!-- WIDGET 4: MONITORAGGIO ACQUA & IDRATAZIONE -->
-                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
-                    <div class="flex items-center gap-2.5 mb-6">
-                        <span class="p-2 bg-cyan-50 text-cyan-600 rounded-xl"><i class="fa-solid fa-droplet"></i></span>
-                        <h3 class="text-xl font-serif font-bold text-stone-900">Idratazione Giornaliera</h3>
-                    </div>
-
-                    <div class="space-y-6">
-                        <!-- Partner A -->
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold mb-2 text-stone-600">
-                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-terracotta-500"></i> Partner A</span>
-                                <span id="water-text-1">0 / 8 bicchieri</span>
-                            </div>
-                            <div class="flex justify-between gap-1.5" id="water-grid-1">
-                                <!-- Generato da JS -->
-                            </div>
-                        </div>
-
-                        <!-- Partner B -->
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold mb-2 text-stone-600">
-                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-[8px] text-stone-400"></i> Partner B</span>
-                                <span id="water-text-2">0 / 8 bicchieri</span>
-                            </div>
-                            <div class="flex justify-between gap-1.5" id="water-grid-2">
-                                <!-- Generato da JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- WIDGET 5: HABIT TRACKER (ABITUDINI DI COPPIA) -->
-                <div class="bg-white border border-stone-200/60 rounded-3xl p-6 shadow-sm">
-                    <div class="flex items-center gap-2.5 mb-6">
-                        <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fa-solid fa-calendar-check"></i></span>
-                        <h3 class="text-xl font-serif font-bold text-stone-900">Abitudini Sincronizzate</h3>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <!-- ABITUDINE 1 -->
-                        <div class="p-3.5 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-bold text-stone-800">Allenamento / Yoga</h4>
-                                <p class="text-[11px] text-stone-500 mb-0">Rimanere in salute insieme</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="toggleHabit('allenamento', 'Partner A')" id="habit-allenamento-1" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">A</button>
-                                <button onclick="toggleHabit('allenamento', 'Partner B')" id="habit-allenamento-2" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">B</button>
-                            </div>
-                        </div>
-
-                        <!-- ABITUDINE 2 -->
-                        <div class="p-3.5 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-bold text-stone-800">Lettura Libri</h4>
-                                <p class="text-[11px] text-stone-500 mb-0">Almeno 15 minuti al giorno</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="toggleHabit('lettura', 'Partner A')" id="habit-lettura-1" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">A</button>
-                                <button onclick="toggleHabit('lettura', 'Partner B')" id="habit-lettura-2" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">B</button>
-                            </div>
-                        </div>
-
-                        <!-- ABITUDINE 3 -->
-                        <div class="p-3.5 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-bold text-stone-800">Studio / Sviluppo</h4>
-                                <p class="text-[11px] text-stone-500 mb-0">Imparare qualcosa di nuovo</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="toggleHabit('studio', 'Partner A')" id="habit-studio-1" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">A</button>
-                                <button onclick="toggleHabit('studio', 'Partner B')" id="habit-studio-2" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all">B</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- WIDGET 6: CITAZIONE E PLAYLIST ACCANTO -->
-                <div class="bg-gradient-to-tr from-stone-900 to-stone-800 text-stone-100 border border-stone-800 rounded-3xl p-6 shadow-md relative overflow-hidden">
-                    <div class="relative z-10 flex flex-col justify-between h-full">
-                        <div>
-                            <span class="text-terracotta-500 text-3xl font-serif">“</span>
-                            <p class="italic text-stone-300 text-sm mb-4" id="random-quote">"La pazienza e la comunicazione sono i mattoni della nostra felicità quotidiana."</p>
-                            <span class="text-xs text-stone-400 font-bold block text-right">— HomeSync Wisdom</span>
-                        </div>
-                        <div class="mt-6 pt-4 border-t border-stone-800 flex items-center justify-between">
-                            <span class="text-[10px] uppercase font-bold text-stone-400 tracking-widest"><i class="fa-solid fa-music text-terracotta-500 mr-1"></i> Brano del Mese</span>
-                            <span class="text-xs font-semibold text-stone-300">Spotify Auto-sync 🟢</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
-    <!-- CORE LOGIC JAVASCRIPT -->
-    <script>
-        // Stato Globale dell'App
-        let state = {
-            currentUser: 'Partner A', // Default
-            expenses: [],
-            shopping: [],
-            notes: [],
-            water: {
-                'Partner A': 0,
-                'Partner B': 0
-            },
-            habits: {
-                'allenamento': { 'Partner A': false, 'Partner B': false },
-                'lettura': { 'Partner A': false, 'Partner B': false },
-                'studio': { 'Partner A': false, 'Partner B': false }
-            },
-            savings: {
-                title: 'Viaggio in Giappone 🇯🇵',
-                target: 2000,
-                current: 450
-            }
-        };
-
-        // Carica i dati salvati da localStorage all'avvio
-        function loadState() {
-            const savedState = localStorage.getItem('homesync_data_v1');
-            if (savedState) {
-                state = JSON.parse(savedState);
-            } else {
-                // Dati dimostrativi pre-caricati per renderla viva al primo avvio
-                state.expenses = [
-                    { id: 1, amount: 45.50, desc: 'Spesa Esselunga', payer: 'Partner A' },
-                    { id: 2, amount: 15.00, desc: 'Pizze asporto', payer: 'Partner B' }
-                ];
-                state.shopping = [
-                    { id: 1, item: 'Pane integrale', completed: false },
-                    { id: 2, item: 'Detersivo piatti', completed: true }
-                ];
-                state.notes = [
-                    { id: 1, text: 'Chiamare l\'idraulico mercoledì mattina', author: 'Partner A' },
-                    { id: 2, text: 'Ricordarsi la cena con i colleghi venerdì!', author: 'Partner B' }
-                ];
-                saveState();
-            }
-            renderAll();
-        }
-
-        // Salva lo stato corrente in localStorage
-        function saveState() {
-            localStorage.setItem('homesync_data_v1', JSON.stringify(state));
-        }
-
-        // Cambio utente attivo
-        function switchUser(user) {
-            state.currentUser = user;
-            
-            // Aggiorna bottoni UI
-            const btn1 = document.getElementById('btn-user-1');
-            const btn2 = document.getElementById('btn-user-2');
-            
-            if (user === 'Partner A') {
-                btn1.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-terracotta-600 shadow-sm border border-stone-200/50";
-                btn2.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:text-stone-900";
-            } else {
-                btn2.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-terracotta-600 shadow-sm border border-stone-200/50";
-                btn1.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-stone-600 hover:text-stone-900";
-            }
-
-            // Aggiorna testi indicanti l'utente
-            document.getElementById('current-user-display').innerText = user;
-            document.getElementById('other-user-display').innerText = user === 'Partner A' ? 'Partner B' : 'Partner A';
-            
-            logToBot(`System`, `Identità commutata: ora operi come ${user}`);
-        }
-
-        // Renderizza tutti i widget
-        function renderAll() {
-            renderExpenses();
-            renderShopping();
-            renderNotes();
-            renderWater();
-            renderHabits();
-            renderSavings();
-        }
-
-        // --- WIDGET CASSA COMUNE ---
-        function renderExpenses() {
-            const listEl = document.getElementById('expenses-list');
-            listEl.innerHTML = '';
-            
-            let total = 0;
-            let spentByUser1 = 0; // Partner A
-            let spentByUser2 = 0; // Partner B
-
-            state.expenses.forEach(exp => {
-                total += exp.amount;
-                if (exp.payer === 'Partner A') spentByUser1 += exp.amount;
-                if (exp.payer === 'Partner B') spentByUser2 += exp.amount;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-semibold text-xs ${exp.payer === 'Partner A' ? 'text-terracotta-600' : 'text-stone-600'}">
-                        ${exp.payer}
-                    </td>
-                    <td class="px-4 py-3 text-stone-700">${exp.desc}</td>
-                    <td class="px-4 py-3 text-right font-bold text-stone-900">${exp.amount.toFixed(2)} €</td>
-                    <td class="px-4 py-3 text-right">
-                        <button onclick="deleteExpense(${exp.id})" class="text-stone-300 hover:text-red-500 transition-all text-xs"><i class="fa-solid fa-circle-xmark"></i></button>
-                    </td>
-                `;
-                listEl.appendChild(tr);
-            });
-
-            document.getElementById('expenses-count').innerText = `${state.expenses.length} Spese`;
-            document.getElementById('total-spent').innerText = `${total.toFixed(2)} €`;
-            
-            const halfSpent = total / 2;
-            document.getElementById('quota-per-person').innerText = `${halfSpent.toFixed(2)} €`;
-
-            // Calcolo bilancio e chi deve dare a chi
-            const settlementEl = document.getElementById('settlement-status');
-            if (spentByUser1 === spentByUser2) {
-                settlementEl.innerHTML = `Conti in perfetto pari! ⚖️`;
-                settlementEl.className = "text-sm font-semibold text-stone-800";
-            } else if (spentByUser1 > spentByUser2) {
-                const diff = (spentByUser1 - spentByUser2) / 2;
-                settlementEl.innerHTML = `<span class="text-xs block text-stone-500 mb-0.5">Pareggio:</span><strong>Partner B</strong> deve dare <strong>${diff.toFixed(2)} €</strong> a Partner A`;
-                settlementEl.className = "text-sm text-stone-800 text-center";
-            } else {
-                const diff = (spentByUser2 - spentByUser1) / 2;
-                settlementEl.innerHTML = `<span class="text-xs block text-stone-500 mb-0.5">Pareggio:</span><strong>Partner A</strong> deve dare <strong>${diff.toFixed(2)} €</strong> a Partner B`;
-                settlementEl.className = "text-sm text-stone-800 text-center";
-            }
-        }
-
-        function addExpense(customAmount = null, customDesc = null) {
-            const amountInput = document.getElementById('expense-amount');
-            const descInput = document.getElementById('expense-desc');
-
-            const amount = parseFloat(customAmount || amountInput.value);
-            const desc = customDesc || descInput.value.trim();
-
-            if (!amount || amount <= 0 || !desc) {
-                alert('Inserisci un importo valido e una descrizione.');
-                return;
-            }
-
-            const newExp = {
-                id: Date.now(),
-                amount: amount,
-                desc: desc,
-                payer: state.currentUser
-            };
-
-            state.expenses.unshift(newExp); // Mette in cima alla lista
-            saveState();
-            renderExpenses();
-
-            // Svuota i campi
-            amountInput.value = '';
-            descInput.value = '';
-            
-            logToBot(state.currentUser, `Registrata spesa: "${desc}" di ${amount.toFixed(2)} €`);
-        }
-
-        function deleteExpense(id) {
-            state.expenses = state.expenses.filter(exp => exp.id !== id);
-            saveState();
-            renderExpenses();
-            logToBot(`System`, `Spesa rimossa dal bilancio.`);
-        }
-
-
-        // --- WIDGET SPESA CONDIVISA ---
-        function renderShopping() {
-            const listEl = document.getElementById('shopping-list');
-            listEl.innerHTML = '';
-
-            if (state.shopping.length === 0) {
-                listEl.innerHTML = `<p class="text-xs text-stone-400 italic py-4 text-center">Niente da comprare. La dispensa è piena!</p>`;
-                return;
-            }
-
-            state.shopping.forEach(item => {
-                const div = document.createElement('div');
-                div.className = `flex items-center justify-between p-2.5 rounded-xl border border-stone-100 transition-all ${item.completed ? 'bg-stone-50/70 border-stone-100/50' : 'bg-stone-50/30'}`;
-                div.innerHTML = `
-                    <div class="flex items-center gap-2.5">
-                        <button onclick="toggleShoppingItem(${item.id})" class="text-stone-300 hover:text-blue-500 transition-all">
-                            ${item.completed ? '<i class="fa-solid fa-circle-check text-blue-500"></i>' : '<i class="fa-regular fa-circle text-stone-400"></i>'}
-                        </button>
-                        <span class="text-xs ${item.completed ? 'line-through text-stone-400' : 'text-stone-700 font-medium'}">${item.item}</span>
-                    </div>
-                    <button onclick="deleteShoppingItem(${item.id})" class="text-stone-300 hover:text-red-500 text-xs transition-all"><i class="fa-solid fa-xmark"></i></button>
-                `;
-                listEl.appendChild(div);
-            });
-        }
-
-        function addShoppingItem(customText = null) {
-            const input = document.getElementById('shopping-input');
-            const itemText = (customText || input.value).trim();
-
-            if (!itemText) return;
-
-            state.shopping.push({
-                id: Date.now(),
-                item: itemText,
-                completed: false
-            });
-
-            saveState();
-            renderShopping();
-            input.value = '';
-            
-            logToBot(state.currentUser, `Aggiunto a lista spesa: "${itemText}"`);
-        }
-
-        function toggleShoppingItem(id) {
-            const target = state.shopping.find(item => item.id === id);
-            if (target) {
-                target.completed = !target.completed;
-                saveState();
-                renderShopping();
-                logToBot(state.currentUser, `Spuntato articolo: "${target.item}" (${target.completed ? 'completato' : 'da fare'})`);
-            }
-        }
-
-        function deleteShoppingItem(id) {
-            state.shopping = state.shopping.filter(item => item.id !== id);
-            saveState();
-            renderShopping();
-        }
-
-        function clearBoughtItems() {
-            state.shopping = state.shopping.filter(item => !item.completed);
-            saveState();
-            renderShopping();
-            logToBot(`System`, `Rimossi gli articoli già acquistati.`);
-        }
-
-
-        // --- WIDGET POST-IT NOTES ---
-        function renderNotes() {
-            const grid = document.getElementById('notes-grid');
-            grid.innerHTML = '';
-
-            const colors = ['bg-yellow-50 border-yellow-200/60', 'bg-pink-50 border-pink-200/60', 'bg-cyan-50 border-cyan-200/60'];
-
-            if (state.notes.length === 0) {
-                grid.innerHTML = `<p class="col-span-3 text-xs text-stone-400 italic py-4 text-center">Nessun post-it appeso. Lascia un messaggio!</p>`;
-                return;
-            }
-
-            state.notes.forEach((note, index) => {
-                const colorClass = colors[index % colors.length];
-                const div = document.createElement('div');
-                div.className = `${colorClass} border rounded-2xl p-4 shadow-sm flex flex-col justify-between relative overflow-hidden group min-h-[110px]`;
-                div.innerHTML = `
-                    <p class="text-xs text-stone-700 font-medium break-words mb-4">"${note.text}"</p>
-                    <div class="flex justify-between items-center mt-auto border-t border-stone-200/40 pt-2 text-[10px] text-stone-400 font-bold">
-                        <span>Fatto da: ${note.author}</span>
-                        <button onclick="deleteNote(${note.id})" class="text-stone-300 hover:text-red-500 transition-all text-xs"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                `;
-                grid.appendChild(div);
-            });
-        }
-
-        function addNote(customText = null) {
-            const input = document.getElementById('note-input');
-            const noteText = (customText || input.value).trim();
-
-            if (!noteText) return;
-
-            state.notes.push({
-                id: Date.now(),
-                text: noteText,
-                author: state.currentUser
-            });
-
-            saveState();
-            renderNotes();
-            input.value = '';
-            
-            logToBot(state.currentUser, `Appeso post-it: "${noteText}"`);
-        }
-
-        function deleteNote(id) {
-            state.notes = state.notes.filter(note => note.id !== id);
-            saveState();
-            renderNotes();
-        }
-
-
-        // --- WIDGET SALVADANAIO COOP ---
-        function renderSavings() {
-            document.getElementById('savings-title-display').innerText = state.savings.title;
-            
-            const current = state.savings.current;
-            const target = state.savings.target;
-            
-            document.getElementById('savings-progress-text').innerText = `${current} / ${target} €`;
-            
-            let percent = (current / target) * 100;
-            if (percent > 100) percent = 100;
-            if (percent < 0) percent = 0;
-            
-            document.getElementById('savings-bar').style.width = `${percent}%`;
-        }
-
-        function adjustSavings(isAddition) {
-            const input = document.getElementById('savings-input');
-            const amount = parseFloat(input.value);
-
-            if (!amount || amount <= 0) return;
-
-            if (isAddition) {
-                state.savings.current += amount;
-                logToBot(state.currentUser, `Versato nel salvadanaio: ${amount} €`);
-            } else {
-                state.savings.current -= amount;
-                if (state.savings.current < 0) state.savings.current = 0;
-                logToBot(state.currentUser, `Prelevato dal salvadanaio: ${amount} €`);
-            }
-
-            saveState();
-            renderSavings();
-            input.value = '';
-        }
-
-        function updateSavingsTarget() {
-            const titleInput = document.getElementById('new-savings-title');
-            const targetInput = document.getElementById('new-savings-target');
-
-            const newTitle = titleInput.value.trim();
-            const newTarget = parseFloat(targetInput.value);
-
-            if (newTitle) state.savings.title = newTitle;
-            if (newTarget && newTarget > 0) state.savings.target = newTarget;
-
-            saveState();
-            renderSavings();
-            
-            titleInput.value = '';
-            targetInput.value = '';
-            
-            logToBot(`System`, `Nuovo obiettivo salvadanaio impostato: "${state.savings.title}" con target di ${state.savings.target}€`);
-        }
-
-
-        // --- WIDGET IDRATAZIONE ACQUA ---
-        function renderWater() {
-            buildWaterGrid(1, 'Partner A');
-            buildWaterGrid(2, 'Partner B');
-        }
-
-        function buildWaterGrid(id, partner) {
-            const container = document.getElementById(`water-grid-${id}`);
-            const text = document.getElementById(`water-text-${id}`);
-            
-            container.innerHTML = '';
-            const currentGlasses = state.water[partner];
-            text.innerText = `${currentGlasses} / 8 bicchieri`;
-
-            for (let i = 1; i <= 8; i++) {
-                const btn = document.createElement('button');
-                btn.className = `flex-grow aspect-square rounded-lg border transition-all flex items-center justify-center text-xs ${i <= currentGlasses ? 'bg-cyan-500 border-cyan-500 text-white shadow-sm shadow-cyan-500/20' : 'bg-stone-50 border-stone-200 text-stone-400 hover:border-cyan-300'}`;
-                btn.innerHTML = `<i class="fa-solid fa-glass-water"></i>`;
-                btn.onclick = () => toggleWater(partner, i);
-                container.appendChild(btn);
-            }
-        }
-
-        function toggleWater(partner, glassNumber) {
-            if (state.water[partner] === glassNumber) {
-                // Se ri-clicca l'ultimo bicchiere, toglie uno
-                state.water[partner] = glassNumber - 1;
-            } else {
-                state.water[partner] = glassNumber;
-            }
-            saveState();
-            renderWater();
-        }
-
-
-        // --- WIDGET ABITUDINI DI COPPIA ---
-        function renderHabits() {
-            Object.keys(state.habits).forEach(habitKey => {
-                const partnerA_done = state.habits[habitKey]['Partner A'];
-                const partnerB_done = state.habits[habitKey]['Partner B'];
-
-                const btnA = document.getElementById(`habit-${habitKey}-1`);
-                const btnB = document.getElementById(`habit-${habitKey}-2`);
-
-                if (partnerA_done) {
-                    btnA.className = "w-9 h-9 rounded-xl border border-terracotta-500 bg-terracotta-500 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-terracotta-600/10";
-                } else {
-                    btnA.className = "w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-terracotta-500 transition-all";
-                }
-
-                if (partnerB_done) {
-                    btnB.className = "w-9 h-9 rounded-xl border border-stone-850 bg-stone-850 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-stone-850/10";
-                } else {
-                    btnB.className = "w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-xs font-semibold text-stone-400 hover:border-stone-850 transition-all";
-                }
-            });
-        }
-
-        function toggleHabit(habitKey, partner) {
-            state.habits[habitKey][partner] = !state.habits[habitKey][partner];
-            saveState();
-            renderHabits();
-            
-            const habitNames = {
-                'allenamento': 'Allenamento',
-                'lettura': 'Lettura',
-                'studio': 'Studio'
-            };
-            logToBot(partner, `${state.habits[habitKey][partner] ? 'Svolta' : 'Annullata'} l'abitudine: "${habitNames[habitKey]}"`);
-        }
-
-
-        // --- AUTOMAZIONE: BOT TELEGRAM SIMULATO ---
-        function fillBotInput(text) {
-            document.getElementById('bot-input').value = text;
-        }
-
-        function logToBot(author, text) {
-            const logs = document.getElementById('bot-logs');
-            const authorSpan = author === 'System' 
-                ? `<span class="text-green-400">[System]</span>`
-                : `<span class="text-blue-400">[${author}]</span>`;
-                
-            logs.innerHTML += `<div>${authorSpan} ${text}</div>`;
-            logs.scrollTop = logs.scrollHeight; // Auto-scroll
-        }
-
-        function simulateTelegramMessage() {
-            const input = document.getElementById('bot-input');
-            const message = input.value.trim();
-
-            if (!message) return;
-
-            logToBot(`User`, `Inviato comando: ${message}`);
-
-            // Parsing dei comandi usando Regex
-            const expenseRegex = /^\/spesa\s+(\d+(\.\d+)?)\s+(.+)$/i;
-            const shoppingRegex = /^\/compra\s+(.+)$/i;
-            const noteRegex = /^\/nota\s+(.+)$/i;
-
-            if (expenseRegex.test(message)) {
-                const matches = message.match(expenseRegex);
-                const amount = parseFloat(matches[1]);
-                const desc = matches[3];
-                
-                addExpense(amount, desc);
-                logToBot(`Bot`, `✅ Spesa registrata con successo su GitHub!`);
-            } 
-            else if (shoppingRegex.test(message)) {
-                const matches = message.match(shoppingRegex);
-                const item = matches[1];
-                
-                addShoppingItem(item);
-                logToBot(`Bot`, `✅ "${item}" aggiunto alla lista spesa condivisa!`);
-            } 
-            else if (noteRegex.test(message)) {
-                const matches = message.match(noteRegex);
-                const noteText = matches[1];
-                
-                addNote(noteText);
-                logToBot(`Bot`, `✅ Post-it appuntato in bacheca!`);
-            } 
-            else {
-                logToBot(`Bot`, `❌ Comando non riconosciuto. Usa:<br>• /spesa [numero] [descrizione]<br>• /compra [oggetto]<br>• /nota [messaggio]`);
-            }
-
-            input.value = '';
-        }
-
-        // --- CLOCK & DATE REAL-TIME ---
-        function updateDateTime() {
-            const now = new Date();
-            
-            // Orario
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('live-time').innerText = `${hours}:${minutes}`;
-
-            // Data
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('live-date').innerText = now.toLocaleDateString('it-IT', options);
-        }
-
-        // Citazioni randomiche stimolanti
-        const quotes = [
-            "La pazienza e la comunicazione sono i mattoni della nostra felicità quotidiana.",
-            "I piccoli traguardi fatti insieme costruiscono grandi capitoli.",
-            "Chi fa la spesa non compra le idee, ma una cena favolosa sì!",
-            "Un centesimo risparmiato insieme oggi è un viaggio memorabile domani.",
-            "Ricordati di dire grazie anche per le piccole cose."
-        ];
-        
-        function setRandomQuote() {
-            const randomIndex = Math.floor(Math.random() * quotes.length);
-            document.getElementById('random-quote').innerText = `"${quotes[randomIndex]}"`;
-        }
-
-        // Inizializzazione all'avvio
-        window.onload = function() {
-            loadState();
-            updateDateTime();
-            setRandomQuote();
-            setInterval(updateDateTime, 1000); // Aggiorna orario ogni secondo
-        };
-    </script>
+<body>
+
+<!-- HEADER -->
+<header id="app-header">
+  <div class="header-inner">
+    <div class="logo-wrap">
+      <div class="logo-icon"><i class="fa-solid fa-house-chimney-heart"></i></div>
+      <div>
+        <div class="app-title">HomeSync</div>
+        <div class="app-sub" id="partner-sub">Il vostro spazio condiviso</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="user-pill">
+        <button class="user-btn active" id="btn-user-1" onclick="switchUser(0)">A</button>
+        <button class="user-btn" id="btn-user-2" onclick="switchUser(1)">B</button>
+      </div>
+      <button class="settings-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></button>
+    </div>
+  </div>
+</header>
+
+<!-- PAGES -->
+<div id="page-home" class="page active">
+
+  <!-- DATE BAR -->
+  <div class="datetime-bar">
+    <div>
+      <div class="datetime-date" id="display-date">Caricamento...</div>
+      <div class="datetime-weather"><i class="fa-solid fa-sun" style="color:#f59e0b"></i> <span id="display-city">Roma</span>, bella giornata</div>
+    </div>
+    <div class="datetime-time" id="display-time">00:00</div>
+  </div>
+
+  <!-- QUOTE CARD -->
+  <div class="quote-card" id="quote-card">
+    <div class="quote-bg-char">"</div>
+    <div class="quote-label"><i class="fa-solid fa-sparkles"></i> Frase del giorno</div>
+    <div class="quote-text" id="daily-quote">Caricamento...</div>
+    <div class="quote-author">— HomeSync Wisdom</div>
+    <button onclick="newQuote()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;margin-top:12px;font-family:'DM Sans',sans-serif;">
+      <i class="fa-solid fa-rotate"></i> Nuova frase
+    </button>
+  </div>
+
+  <!-- SPESE SUMMARY -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon amber"><i class="fa-solid fa-wallet"></i></div>Bilancio Comune</div>
+      <span class="badge badge-accent" id="exp-count">0 spese</span>
+    </div>
+    <div class="grid-3" style="margin-bottom:14px;">
+      <div class="stat-card"><div class="stat-label">Totale</div><div class="stat-value" id="home-total">0 €</div></div>
+      <div class="stat-card"><div class="stat-label">A testa</div><div class="stat-value" id="home-quota">0 €</div></div>
+      <div class="stat-card"><div class="stat-label">Questo mese</div><div class="stat-value" id="home-month">0 €</div></div>
+    </div>
+    <div class="settlement-box ok" id="home-settlement">
+      <div class="settlement-text" id="home-settlement-text"><strong>Conti in pari ⚖️</strong></div>
+    </div>
+  </div>
+
+  <!-- SALVADANAIO -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon sage"><i class="fa-solid fa-piggy-bank"></i></div><span id="savings-display-name">Salvadanaio</span></div>
+      <div class="savings-pct" id="savings-pct">0%</div>
+    </div>
+    <div class="savings-header">
+      <span class="savings-name" id="savings-goal-name">Viaggio in Giappone 🇯🇵</span>
+      <span class="savings-vals" id="savings-vals">0 / 2000 €</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill sage" id="savings-bar" style="width:0%"></div></div>
+    <div class="input-row" style="margin-top:12px;">
+      <input type="number" id="savings-input" placeholder="Importo €" style="flex:1">
+      <button class="btn btn-sage btn-sm" onclick="adjustSavings(true)"><i class="fa-solid fa-plus"></i> Versa</button>
+      <button class="btn btn-ghost btn-sm" onclick="adjustSavings(false)"><i class="fa-solid fa-minus"></i></button>
+    </div>
+  </div>
+
+  <!-- IDRATAZIONE -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon sky"><i class="fa-solid fa-droplet"></i></div>Idratazione</div>
+    </div>
+    <div class="water-section" id="water-section-1"></div>
+    <div class="water-section" id="water-section-2"></div>
+  </div>
+
+</div>
+
+<!-- PAGE SPESE -->
+<div id="page-spese" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon amber"><i class="fa-solid fa-wallet"></i></div>Cassa Comune</div>
+    </div>
+    <div class="grid-2" style="margin-bottom:14px;">
+      <div class="stat-card"><div class="stat-label">Totale speso</div><div class="stat-value" id="exp-total">0 €</div></div>
+      <div class="stat-card"><div class="stat-label">Quota a testa</div><div class="stat-value" id="exp-quota">0 €</div></div>
+    </div>
+    <div class="settlement-box" id="settlement-box-full" style="margin-bottom:16px;">
+      <div class="settlement-text" id="settlement-text-full">Conti in pari ⚖️</div>
+    </div>
+    <div class="card" style="background:#f8f6f3;box-shadow:none;border-color:var(--border);">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;">Registra Spesa</div>
+      <div class="input-row" style="flex-wrap:wrap;gap:8px;">
+        <input type="number" id="expense-amount" placeholder="Importo €" style="flex:1;min-width:100px;">
+        <input type="text" id="expense-desc" placeholder="Descrizione" style="flex:2;min-width:140px;">
+        <select id="expense-cat" style="flex:1;min-width:110px;">
+          <option value="Spesa">🛒 Spesa</option>
+          <option value="Ristorante">🍽️ Ristorante</option>
+          <option value="Casa">🏠 Casa</option>
+          <option value="Trasporti">🚗 Trasporti</option>
+          <option value="Salute">💊 Salute</option>
+          <option value="Svago">🎭 Svago</option>
+          <option value="Altro">📦 Altro</option>
+        </select>
+        <button class="btn btn-accent" onclick="addExpense()" style="width:100%"><i class="fa-solid fa-plus"></i> Aggiungi Spesa</button>
+      </div>
+    </div>
+    <div id="expenses-list" style="margin-top:4px;"></div>
+  </div>
+  <!-- BOT SIMULATOR -->
+  <div class="bot-panel">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:8px;"><i class="fa-brands fa-telegram" style="color:#4fbbef"></i> Simulatore Bot Telegram</div>
+    <div class="bot-log" id="bot-log"></div>
+    <div class="bot-input-row">
+      <input type="text" id="bot-input" placeholder="/spesa 15 Pizza">
+      <button class="btn btn-accent btn-sm" onclick="sendBotCmd()">Invia</button>
+    </div>
+    <div class="bot-chips">
+      <span class="bot-chip" onclick="setBotInput('/spesa 15 Pizza')">/spesa 15 Pizza</span>
+      <span class="bot-chip" onclick="setBotInput('/compra Latte')">/compra Latte</span>
+      <span class="bot-chip" onclick="setBotInput('/nota Chiamare idraulico')">/nota Idraulico</span>
+      <span class="bot-chip" onclick="setBotInput('/todo Fare bucato')">/todo Bucato</span>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE CASA -->
+<div id="page-casa" class="page">
+
+  <!-- LISTA SPESA -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon sky"><i class="fa-solid fa-cart-shopping"></i></div>Lista della Spesa</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearBought()"><i class="fa-solid fa-broom"></i></button>
+    </div>
+    <div id="shopping-list"></div>
+    <div class="input-row" style="margin-top:10px;">
+      <input type="text" id="shopping-input" placeholder="Aggiungi prodotto..." style="flex:1;">
+      <button class="btn btn-sky btn-sm" onclick="addShoppingItem()"><i class="fa-solid fa-plus"></i></button>
+    </div>
+  </div>
+
+  <!-- TO DO LIST -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon lav"><i class="fa-solid fa-list-check"></i></div>To Do List</div>
+      <button class="btn btn-ghost btn-sm" onclick="clearDoneTodos()"><i class="fa-solid fa-broom"></i></button>
+    </div>
+    <div id="todo-list"></div>
+    <div class="card" style="background:#f8f6f3;box-shadow:none;border-color:var(--border);margin-top:8px;">
+      <div class="input-row" style="flex-wrap:wrap;gap:8px;">
+        <input type="text" id="todo-input" placeholder="Nuova attività..." style="flex:1;min-width:160px;">
+        <select id="todo-priority" style="min-width:110px;">
+          <option value="alta">🔴 Alta</option>
+          <option value="media" selected>🟡 Media</option>
+          <option value="bassa">🟢 Bassa</option>
+        </select>
+        <select id="todo-assignee" style="min-width:110px;">
+          <option value="entrambi">👥 Entrambi</option>
+          <option value="A" id="todo-opt-a">Partner A</option>
+          <option value="B" id="todo-opt-b">Partner B</option>
+        </select>
+        <button class="btn btn-accent" onclick="addTodo()" style="width:100%"><i class="fa-solid fa-plus"></i> Aggiungi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-IT NOTES -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon pink"><i class="fa-solid fa-thumbtack"></i></div>Bacheca Post-it</div>
+    </div>
+    <div id="notes-grid"></div>
+    <div class="input-row" style="margin-top:10px;">
+      <input type="text" id="note-input" placeholder="Lascia un messaggio..." style="flex:1;">
+      <button class="btn btn-accent btn-sm" onclick="addNote()"><i class="fa-solid fa-thumbtack"></i></button>
+    </div>
+  </div>
+
+  <!-- IDEE PASTI -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon gold"><i class="fa-solid fa-utensils"></i></div>Idee Pasti</div>
+      <button class="btn btn-ghost btn-sm" onclick="shuffleMeals()"><i class="fa-solid fa-dice"></i> Casuale</button>
+    </div>
+    <div id="meal-ideas"></div>
+    <div class="card" style="background:#f8f6f3;box-shadow:none;border-color:var(--border);margin-top:4px;">
+      <div class="input-row" style="flex-wrap:wrap;gap:8px;">
+        <input type="text" id="meal-name-input" placeholder="Nome piatto..." style="flex:2;min-width:140px;">
+        <select id="meal-type-input" style="min-width:110px;">
+          <option value="🍳 Colazione">🍳 Colazione</option>
+          <option value="🥗 Pranzo" selected>🥗 Pranzo</option>
+          <option value="🍽️ Cena">🍽️ Cena</option>
+          <option value="🍕 Sfizio">🍕 Sfizio</option>
+        </select>
+        <button class="btn btn-accent" onclick="addMeal()" style="width:100%"><i class="fa-solid fa-plus"></i> Aggiungi Piatto</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PAGE CALENDARIO -->
+<div id="page-cal" class="page">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon lav"><i class="fa-solid fa-calendar-days"></i></div>Calendario di Coppia</div>
+    </div>
+    <div class="cal-sync-note">
+      <i class="fa-brands fa-apple"></i>
+      <div>
+        <strong>Sincronizzazione iPhone Calendar</strong><br>
+        Aggiungi un abbonamento WebCal con l'URL generato qui sotto per sincronizzare gli eventi con l'app Calendario di iPhone. Oppure aggiungi gli eventi manualmente in questa sezione condivisa.
+        <br><br>
+        <button class="btn btn-ghost btn-sm" onclick="copyCalUrl()" style="background:white;border-color:rgba(124,111,160,0.3);color:var(--lavender);">
+          <i class="fa-solid fa-link"></i> Copia link iCal
+        </button>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">Prossimi eventi</div>
+      <div id="cal-events-list"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon sage"><i class="fa-solid fa-calendar-plus"></i></div>Aggiungi Evento</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input type="text" id="cal-title" placeholder="Titolo evento...">
+      <div class="input-row">
+        <input type="date" id="cal-date" style="flex:1;">
+        <input type="time" id="cal-time" style="flex:1;">
+      </div>
+      <select id="cal-color">
+        <option value="accent">🔴 Coppia</option>
+        <option value="sage">🟢 Salute</option>
+        <option value="sky">🔵 Lavoro</option>
+        <option value="gold">🟡 Svago</option>
+      </select>
+      <button class="btn btn-accent" onclick="addCalEvent()"><i class="fa-solid fa-plus"></i> Aggiungi Evento</button>
+    </div>
+  </div>
+
+  <!-- ABITUDINI -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon lav"><i class="fa-solid fa-calendar-check"></i></div>Abitudini Sincronizzate</div>
+    </div>
+    <div id="habits-list"></div>
+  </div>
+</div>
+
+<!-- PAGE STATISTICHE -->
+<div id="page-stats" class="page">
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon gold"><i class="fa-solid fa-trophy"></i></div>Classifica Abitudini</div>
+    </div>
+    <div id="stats-leaderboard"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon amber"><i class="fa-solid fa-chart-bar"></i></div>Spese per Categoria</div>
+    </div>
+    <div class="chart-bar-wrap" id="chart-categories"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon sage"><i class="fa-solid fa-chart-line"></i></div>Risparmio Mensile</div>
+    </div>
+    <div class="chart-bar-wrap" id="chart-savings"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon sky"><i class="fa-solid fa-droplet"></i></div>Idratazione Settimanale</div>
+    </div>
+    <div class="chart-bar-wrap" id="chart-water"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon coral"><i class="fa-solid fa-fire"></i></div>Streak & Record</div>
+    </div>
+    <div id="stats-streaks" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="card-icon lav"><i class="fa-solid fa-clock-rotate-left"></i></div>Storico Spese (30gg)</div>
+    </div>
+    <div id="stats-history" style="max-height:300px;overflow-y:auto;"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav">
+  <button class="nav-item active" onclick="switchPage('home',this)"><i class="fa-solid fa-house"></i>Home</button>
+  <button class="nav-item" onclick="switchPage('spese',this)"><i class="fa-solid fa-wallet"></i>Spese</button>
+  <button class="nav-item" onclick="switchPage('casa',this)"><i class="fa-solid fa-list-check"></i>Casa</button>
+  <button class="nav-item" onclick="switchPage('cal',this)"><i class="fa-solid fa-calendar"></i>Agenda</button>
+  <button class="nav-item" onclick="switchPage('stats',this)"><i class="fa-solid fa-chart-bar"></i>Stats</button>
+</nav>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal" onclick="handleModalClick(event)">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ Impostazioni</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Nomi dei Partner</div>
+      <div class="setting-row">
+        <div class="setting-label">Nome Partner A</div>
+        <input type="text" id="setting-name-a" placeholder="Es: Marco">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Nome Partner B</div>
+        <input type="text" id="setting-name-b" placeholder="Es: Sofia">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Città (per meteo)</div>
+        <input type="text" id="setting-city" placeholder="Es: Roma">
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Obiettivo Salvadanaio</div>
+      <div class="setting-row">
+        <div class="setting-label">Nome obiettivo</div>
+        <input type="text" id="setting-savings-name" placeholder="Es: Viaggio in Giappone">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Cifra target (€)</div>
+        <input type="number" id="setting-savings-target" placeholder="Es: 2000">
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Abitudini da Tracciare</div>
+      <div id="habit-settings-list"></div>
+      <div class="input-row" style="margin-top:8px;">
+        <input type="text" id="new-habit-input" placeholder="Nuova abitudine..." style="flex:1;">
+        <input type="text" id="new-habit-sub" placeholder="Sottotitolo..." style="flex:1;">
+        <button class="btn btn-ghost btn-sm" onclick="addHabitSetting()"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
+
+    <div class="modal-section" style="padding-bottom:24px;">
+      <button class="btn btn-accent" style="width:100%;padding:13px;" onclick="saveSettings()">
+        <i class="fa-solid fa-floppy-disk"></i> Salva Impostazioni
+      </button>
+      <button class="btn btn-danger btn-sm" style="width:100%;margin-top:8px;" onclick="confirmReset()">
+        <i class="fa-solid fa-triangle-exclamation"></i> Azzera tutti i dati
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========= STATE =========
+const DEFAULT_STATE = {
+  currentUser: 0,
+  settings: {
+    names: ['Partner A', 'Partner B'],
+    city: 'Roma',
+    savingsGoalName: 'Viaggio in Giappone 🇯🇵',
+    savingsTarget: 2000,
+    habits: [
+      {key:'allenamento', name:'Allenamento / Yoga', sub:'Rimanere in salute insieme'},
+      {key:'lettura', name:'Lettura', sub:'Almeno 15 minuti al giorno'},
+      {key:'studio', name:'Studio / Sviluppo', sub:'Imparare qualcosa di nuovo'}
+    ]
+  },
+  expenses: [],
+  shopping: [],
+  notes: [],
+  todos: [],
+  meals: [
+    {id:1, name:'Pasta al pomodoro', type:'🍽️ Cena'},
+    {id:2, name:'Insalata Greca', type:'🥗 Pranzo'},
+    {id:3, name:'Frittata di verdure', type:'🍳 Colazione'},
+    {id:4, name:'Risotto ai funghi', type:'🍽️ Cena'},
+    {id:5, name:'Bruschette e affettati', type:'🍕 Sfizio'}
+  ],
+  calEvents: [
+    {id:1, title:'Cena con amici', date:'2026-06-08', time:'20:00', color:'accent'},
+    {id:2, title:'Visita dal dentista', date:'2026-06-12', time:'10:30', color:'sage'},
+    {id:3, title:'Rata affitto', date:'2026-06-01', time:'', color:'gold'}
+  ],
+  water: [0, 0],
+  habits: {},
+  savings: { current: 450, history: [] },
+  waterHistory: [],
+  habitHistory: {},
+  quoteIndex: 0
+};
+
+let S = {};
+
+function loadState() {
+  const saved = localStorage.getItem('homesync_v3');
+  if (saved) {
+    try { S = JSON.parse(saved); } catch(e) { S = deepClone(DEFAULT_STATE); }
+    // Ensure new fields exist
+    if (!S.todos) S.todos = [];
+    if (!S.meals) S.meals = deepClone(DEFAULT_STATE.meals);
+    if (!S.calEvents) S.calEvents = deepClone(DEFAULT_STATE.calEvents);
+    if (!S.settings.habits) S.settings.habits = deepClone(DEFAULT_STATE.settings.habits);
+    if (!S.waterHistory) S.waterHistory = [];
+    if (!S.habitHistory) S.habitHistory = {};
+    if (!S.savings.history) S.savings.history = [];
+    if (S.settings.savingsGoalName === undefined) S.settings.savingsGoalName = DEFAULT_STATE.settings.savingsGoalName;
+  } else {
+    S = deepClone(DEFAULT_STATE);
+    // Demo data
+    S.expenses = [
+      {id:1, amount:45.50, desc:'Spesa Esselunga', payer:0, cat:'Spesa', date: todayStr()},
+      {id:2, amount:15.00, desc:'Pizza asporto', payer:1, cat:'Ristorante', date: todayStr()}
+    ];
+    S.shopping = [
+      {id:1, item:'Pane integrale', done:false},
+      {id:2, item:'Detersivo piatti', done:true}
+    ];
+    S.notes = [
+      {id:1, text:"Chiamare l'idraulico mercoledì", author:0},
+      {id:2, text:"Cena con i colleghi venerdì!", author:1}
+    ];
+    S.todos = [
+      {id:1, text:'Pagare bolletta luce', done:false, priority:'alta', assignee:'A', date: todayStr()},
+      {id:2, text:'Comprare nuovo tappeto', done:false, priority:'bassa', assignee:'entrambi', date: todayStr()}
+    ];
+    // habits state
+    S.settings.habits.forEach(h => { S.habits[h.key] = [false, false]; });
+  }
+  save();
+}
+
+function save() { localStorage.setItem('homesync_v3', JSON.stringify(S)); }
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function monthStr() { const n=new Date(); return n.getFullYear()+'-'+(n.getMonth()+1).toString().padStart(2,'0'); }
+
+// ========= PAGES =========
+function switchPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll();
+}
+
+// ========= USER =========
+function switchUser(idx) {
+  S.currentUser = idx;
+  document.getElementById('btn-user-1').classList.toggle('active', idx===0);
+  document.getElementById('btn-user-2').classList.toggle('active', idx===1);
+  document.getElementById('btn-user-1').textContent = S.settings.names[0].charAt(0).toUpperCase();
+  document.getElementById('btn-user-2').textContent = S.settings.names[1].charAt(0).toUpperCase();
+  document.getElementById('partner-sub').textContent = `Ciao ${S.settings.names[idx]}! 👋`;
+  save();
+}
+
+// ========= QUOTES =========
+const QUOTES = [
+  "La pazienza e la comunicazione sono i mattoni della nostra felicità quotidiana.",
+  "I piccoli traguardi fatti insieme costruiscono grandi capitoli.",
+  "Chi divide le fatiche, moltiplica le gioie.",
+  "Un centesimo risparmiato insieme oggi è un viaggio memorabile domani.",
+  "Ricordati di dire grazie anche per le piccole cose.",
+  "Il vero lusso è avere qualcuno con cui condividere anche il lunedì.",
+  "Una coppia che pianifica insieme, sorride insieme.",
+  "La casa più bella non è quella più grande, ma quella più vissuta.",
+  "Nei momenti di routine si nasconde la dolcezza del quotidiano.",
+  "Ogni piccola abitudine condivisa è un filo che tesse la storia di due."
+];
+
+function newQuote() {
+  S.quoteIndex = (S.quoteIndex + 1) % QUOTES.length;
+  document.getElementById('daily-quote').textContent = '"' + QUOTES[S.quoteIndex] + '"';
+  save();
+}
+
+// ========= DATETIME =========
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('display-time').textContent = h + ':' + m;
+  const opts = {weekday:'long', year:'numeric', month:'long', day:'numeric'};
+  document.getElementById('display-date').textContent = now.toLocaleDateString('it-IT', opts);
+  document.getElementById('display-city').textContent = S.settings.city || 'Roma';
+}
+
+// ========= RENDER ALL =========
+function renderAll() {
+  renderHeader();
+  renderHome();
+  renderExpenses();
+  renderShopping();
+  renderTodos();
+  renderNotes();
+  renderMeals();
+  renderCalEvents();
+  renderHabits();
+  renderSavings();
+  renderStats();
+  renderWater();
+}
+
+function renderHeader() {
+  document.getElementById('btn-user-1').textContent = S.settings.names[0].charAt(0).toUpperCase();
+  document.getElementById('btn-user-2').textContent = S.settings.names[1].charAt(0).toUpperCase();
+  document.getElementById('partner-sub').textContent = `Ciao ${S.settings.names[S.currentUser]}! 👋`;
+  document.getElementById('display-city').textContent = S.settings.city || 'Roma';
+  document.getElementById('daily-quote').textContent = '"' + QUOTES[S.quoteIndex % QUOTES.length] + '"';
+}
+
+// ========= HOME =========
+function renderHome() {
+  const {total, quota, spentBy, diff, debtor} = calcBalance();
+  const monthTotal = S.expenses.filter(e=>e.date&&e.date.startsWith(monthStr())).reduce((s,e)=>s+e.amount,0);
+  document.getElementById('home-total').textContent = total.toFixed(2)+' €';
+  document.getElementById('home-quota').textContent = quota.toFixed(2)+' €';
+  document.getElementById('home-month').textContent = monthTotal.toFixed(2)+' €';
+  document.getElementById('exp-count').textContent = S.expenses.length + ' spese';
+  renderSettlement('home-settlement', 'home-settlement-text', diff, debtor);
+  renderSavings();
+  renderWater();
+}
+
+function calcBalance() {
+  let total = 0, spentBy = [0,0];
+  S.expenses.forEach(e => { total += e.amount; spentBy[e.payer] += e.amount; });
+  const quota = total / 2;
+  const diff = Math.abs(spentBy[0] - spentBy[1]) / 2;
+  const debtor = spentBy[0] > spentBy[1] ? 1 : (spentBy[1] > spentBy[0] ? 0 : -1);
+  return { total, quota, spentBy, diff, debtor };
+}
+
+function renderSettlement(boxId, textId, diff, debtor) {
+  const box = document.getElementById(boxId);
+  const text = document.getElementById(textId);
+  if (!box || !text) return;
+  if (debtor === -1 || diff < 0.01) {
+    box.className = 'settlement-box ok';
+    text.innerHTML = '<strong>Conti in pari ⚖️</strong>';
+  } else {
+    box.className = 'settlement-box';
+    const debtorName = S.settings.names[debtor];
+    const creditorName = S.settings.names[debtor===0?1:0];
+    text.innerHTML = `<strong>${debtorName}</strong> deve dare <strong>${diff.toFixed(2)} €</strong> a ${creditorName}`;
+  }
+}
+
+// ========= EXPENSES =========
+function renderExpenses() {
+  const {total, quota, diff, debtor} = calcBalance();
+  document.getElementById('exp-total').textContent = total.toFixed(2)+' €';
+  document.getElementById('exp-quota').textContent = quota.toFixed(2)+' €';
+  renderSettlement('settlement-box-full', 'settlement-text-full', diff, debtor);
+
+  const list = document.getElementById('expenses-list');
+  if (!list) return;
+  if (S.expenses.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">Nessuna spesa registrata</div>';
+    return;
+  }
+  list.innerHTML = S.expenses.slice(0,30).map(e => {
+    const color = e.payer === 0 ? 'background:var(--accent-light);color:var(--accent)' : 'background:#f1f0f0;color:var(--text-muted)';
+    const name = S.settings.names[e.payer];
+    const initials = name.slice(0,2).toUpperCase();
+    return `<div class="exp-row">
+      <div class="exp-avatar" style="${color}">${initials}</div>
+      <div style="flex:1;">
+        <div class="exp-desc">${e.desc}</div>
+        <div class="exp-sub">${name} · ${e.cat||'Altro'} · ${e.date||''}</div>
+      </div>
+      <div class="exp-amount">${e.amount.toFixed(2)} €</div>
+      <button class="exp-del" onclick="deleteExpense(${e.id})"><i class="fa-solid fa-times-circle"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function addExpense(amt, desc, cat) {
+  const amount = parseFloat(amt || document.getElementById('expense-amount').value);
+  const description = desc || document.getElementById('expense-desc').value.trim();
+  const category = cat || (document.getElementById('expense-cat') ? document.getElementById('expense-cat').value : 'Altro');
+  if (!amount || amount <= 0 || !description) { alert('Inserisci importo e descrizione.'); return; }
+  S.expenses.unshift({ id: Date.now(), amount, desc: description, payer: S.currentUser, cat: category, date: todayStr() });
+  if (document.getElementById('expense-amount')) document.getElementById('expense-amount').value = '';
+  if (document.getElementById('expense-desc')) document.getElementById('expense-desc').value = '';
+  save(); renderAll();
+  botLog('Sistema', `✅ Spesa "${description}" di ${amount.toFixed(2)}€ aggiunta`);
+}
+
+function deleteExpense(id) {
+  S.expenses = S.expenses.filter(e => e.id !== id);
+  save(); renderAll();
+}
+
+// ========= SHOPPING =========
+function renderShopping() {
+  const el = document.getElementById('shopping-list');
+  if (!el) return;
+  if (S.shopping.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">Lista vuota 🎉</div>';
+    return;
+  }
+  el.innerHTML = S.shopping.map(item => `
+    <div class="shop-item">
+      <div class="shop-check ${item.done?'done':''}" onclick="toggleShop(${item.id})">
+        ${item.done ? '<i class="fa-solid fa-check"></i>' : ''}
+      </div>
+      <span class="shop-text ${item.done?'done':''}">${item.item}</span>
+      <button class="shop-del" onclick="deleteShop(${item.id})"><i class="fa-solid fa-times"></i></button>
+    </div>`).join('');
+}
+
+function addShoppingItem(text) {
+  const val = text || (document.getElementById('shopping-input') ? document.getElementById('shopping-input').value.trim() : '');
+  if (!val) return;
+  S.shopping.push({ id: Date.now(), item: val, done: false });
+  if (document.getElementById('shopping-input')) document.getElementById('shopping-input').value = '';
+  save(); renderShopping();
+  botLog('Sistema', `✅ "${val}" aggiunto alla lista`);
+}
+
+function toggleShop(id) {
+  const t = S.shopping.find(i => i.id === id);
+  if (t) { t.done = !t.done; save(); renderShopping(); }
+}
+
+function deleteShop(id) { S.shopping = S.shopping.filter(i => i.id !== id); save(); renderShopping(); }
+function clearBought() { S.shopping = S.shopping.filter(i => !i.done); save(); renderShopping(); }
+
+// ========= TODOS =========
+function renderTodos() {
+  const el = document.getElementById('todo-list');
+  if (!el) return;
+  const pA = document.getElementById('todo-opt-a');
+  const pB = document.getElementById('todo-opt-b');
+  if (pA) pA.textContent = S.settings.names[0];
+  if (pB) pB.textContent = S.settings.names[1];
+  if (S.todos.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">Nessuna attività 🎉</div>';
+    return;
+  }
+  const sorted = [...S.todos].sort((a,b) => {
+    const p = {alta:0,media:1,bassa:2};
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return (p[a.priority]||1) - (p[b.priority]||1);
+  });
+  el.innerHTML = sorted.map(t => {
+    const pClass = {alta:'priority-high',media:'priority-mid',bassa:'priority-low'}[t.priority]||'priority-mid';
+    const assigneeName = t.assignee === 'A' ? S.settings.names[0] : t.assignee === 'B' ? S.settings.names[1] : 'Entrambi';
+    return `<div class="todo-item">
+      <div class="todo-check ${t.done?'done':''}" onclick="toggleTodo(${t.id})">
+        ${t.done ? '<i class="fa-solid fa-check"></i>' : ''}
+      </div>
+      <div class="todo-content">
+        <div class="todo-text ${t.done?'done':''}">${t.text}</div>
+        <div class="todo-meta"><span class="todo-priority ${pClass}"></span>${t.priority} · ${assigneeName}</div>
+      </div>
+      <button class="todo-del" onclick="deleteTodo(${t.id})"><i class="fa-solid fa-times"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function addTodo(text) {
+  const val = text || (document.getElementById('todo-input') ? document.getElementById('todo-input').value.trim() : '');
+  const priority = document.getElementById('todo-priority') ? document.getElementById('todo-priority').value : 'media';
+  const assignee = document.getElementById('todo-assignee') ? document.getElementById('todo-assignee').value : 'entrambi';
+  if (!val) return;
+  S.todos.push({ id: Date.now(), text: val, done: false, priority, assignee, date: todayStr() });
+  if (document.getElementById('todo-input')) document.getElementById('todo-input').value = '';
+  save(); renderTodos();
+}
+
+function toggleTodo(id) {
+  const t = S.todos.find(i => i.id === id);
+  if (t) {
+    t.done = !t.done;
+    if (t.done) {
+      // track habit completion for stats
+      const key = 'todo_' + todayStr();
+      if (!S.habitHistory[key]) S.habitHistory[key] = 0;
+      S.habitHistory[key]++;
+    }
+    save(); renderTodos(); renderStats();
+  }
+}
+
+function deleteTodo(id) { S.todos = S.todos.filter(i => i.id !== id); save(); renderTodos(); }
+function clearDoneTodos() { S.todos = S.todos.filter(i => !i.done); save(); renderTodos(); }
+
+// ========= NOTES =========
+function renderNotes() {
+  const el = document.getElementById('notes-grid');
+  if (!el) return;
+  const colors = ['yellow','pink','blue','green'];
+  if (S.notes.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">Nessun post-it</div>';
+    return;
+  }
+  el.innerHTML = S.notes.map((n,i) => `
+    <div class="note-card ${colors[i%colors.length]}">
+      <div class="note-text">${n.text}</div>
+      <div class="note-meta">
+        <span>${S.settings.names[n.author]}</span>
+        <button class="note-del" onclick="deleteNote(${n.id})"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function addNote(text) {
+  const val = text || (document.getElementById('note-input') ? document.getElementById('note-input').value.trim() : '');
+  if (!val) return;
+  S.notes.push({ id: Date.now(), text: val, author: S.currentUser });
+  if (document.getElementById('note-input')) document.getElementById('note-input').value = '';
+  save(); renderNotes();
+  botLog('Sistema', `✅ Post-it aggiunto`);
+}
+
+function deleteNote(id) { S.notes = S.notes.filter(n => n.id !== id); save(); renderNotes(); }
+
+// ========= MEALS =========
+function renderMeals() {
+  const el = document.getElementById('meal-ideas');
+  if (!el) return;
+  if (S.meals.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">Aggiungi idee pasto!</div>';
+    return;
+  }
+  el.innerHTML = S.meals.map(m => `
+    <div class="meal-card">
+      <div class="meal-tag">${m.type}</div>
+      <div class="meal-name">${m.name}</div>
+      <button class="meal-btn" onclick="deleteMeal(${m.id})"><i class="fa-solid fa-times"></i> Rimuovi</button>
+    </div>`).join('');
+}
+
+function addMeal() {
+  const name = document.getElementById('meal-name-input').value.trim();
+  const type = document.getElementById('meal-type-input').value;
+  if (!name) return;
+  S.meals.push({ id: Date.now(), name, type });
+  document.getElementById('meal-name-input').value = '';
+  save(); renderMeals();
+}
+
+function deleteMeal(id) { S.meals = S.meals.filter(m => m.id !== id); save(); renderMeals(); }
+
+function shuffleMeals() {
+  for (let i = S.meals.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [S.meals[i], S.meals[j]] = [S.meals[j], S.meals[i]];
+  }
+  save(); renderMeals();
+}
+
+// ========= CALENDAR =========
+function renderCalEvents() {
+  const el = document.getElementById('cal-events-list');
+  if (!el) return;
+  const sorted = [...S.calEvents].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+  if (sorted.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">Nessun evento</div>';
+    return;
+  }
+  el.innerHTML = sorted.map(ev => `
+    <div class="cal-event ${ev.color}">
+      <div>
+        <div class="cal-time">${ev.time||'—'}</div>
+        <div style="font-size:10px;color:var(--text-light);">${ev.date}</div>
+      </div>
+      <div style="flex:1;">
+        <div class="cal-title">${ev.title}</div>
+      </div>
+      <button onclick="deleteCalEvent(${ev.id})" style="background:none;border:none;color:var(--text-light);cursor:pointer;font-size:13px;"><i class="fa-solid fa-times"></i></button>
+    </div>`).join('');
+}
+
+function addCalEvent() {
+  const title = document.getElementById('cal-title').value.trim();
+  const date = document.getElementById('cal-date').value;
+  const time = document.getElementById('cal-time').value;
+  const color = document.getElementById('cal-color').value;
+  if (!title || !date) { alert('Inserisci titolo e data.'); return; }
+  S.calEvents.push({ id: Date.now(), title, date, time, color });
+  document.getElementById('cal-title').value = '';
+  save(); renderCalEvents();
+}
+
+function deleteCalEvent(id) { S.calEvents = S.calEvents.filter(e => e.id !== id); save(); renderCalEvents(); }
+
+function copyCalUrl() {
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => alert('Link copiato! Aggiungilo come abbonamento calendaio in iPhone Settings > Calendario > Account > Aggiungi Account > Altro > Aggiungi calendario sottoscritto'));
+}
+
+// ========= WATER =========
+function renderWater() {
+  [0,1].forEach(i => {
+    const secEl = document.getElementById(`water-section-${i+1}`);
+    if (!secEl) return;
+    const count = S.water[i] || 0;
+    secEl.innerHTML = `
+      <div class="water-label">
+        <span>${S.settings.names[i]}</span>
+        <span>${count} / 8 bicchieri</span>
+      </div>
+      <div class="water-dots">
+        ${Array.from({length:8},(_,j)=>`
+          <div class="water-dot ${j<count?'filled':''}" onclick="toggleWater(${i},${j+1})">
+            <i class="fa-solid fa-glass-water"></i>
+          </div>`).join('')}
+      </div>`;
+  });
+}
+
+function toggleWater(user, n) {
+  S.water[user] = (S.water[user] === n) ? n-1 : n;
+  // Save to history
+  const key = todayStr();
+  if (!S.waterHistory) S.waterHistory = [];
+  const existing = S.waterHistory.find(h => h.date === key && h.user === user);
+  if (existing) existing.count = S.water[user];
+  else S.waterHistory.push({ date: key, user, count: S.water[user] });
+  save(); renderWater();
+}
+
+// ========= HABITS =========
+function renderHabits() {
+  const el = document.getElementById('habits-list');
+  if (!el) return;
+  el.innerHTML = S.settings.habits.map(h => {
+    const state = S.habits[h.key] || [false, false];
+    return `<div class="habit-row">
+      <div class="habit-info">
+        <h4>${h.name}</h4>
+        <p>${h.sub}</p>
+      </div>
+      <div class="habit-btns">
+        <button class="hab-btn ${state[0]?'done-a':''}" onclick="toggleHabit('${h.key}',0)" title="${S.settings.names[0]}">
+          ${S.settings.names[0].charAt(0)}
+        </button>
+        <button class="hab-btn ${state[1]?'done-b':''}" onclick="toggleHabit('${h.key}',1)" title="${S.settings.names[1]}">
+          ${S.settings.names[1].charAt(0)}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHabit(key, userIdx) {
+  if (!S.habits[key]) S.habits[key] = [false, false];
+  S.habits[key][userIdx] = !S.habits[key][userIdx];
+  // Track in history
+  const hKey = key + '_' + todayStr() + '_' + userIdx;
+  if (!S.habitHistory[hKey]) S.habitHistory[hKey] = 0;
+  if (S.habits[key][userIdx]) S.habitHistory[hKey]++;
+  save(); renderHabits(); renderStats();
+}
+
+// ========= SAVINGS =========
+function renderSavings() {
+  const c = S.savings.current || 0;
+  const t = S.settings.savingsTarget || 1;
+  const pct = Math.min(100, Math.round(c / t * 100));
+  document.getElementById('savings-pct').textContent = pct + '%';
+  document.getElementById('savings-goal-name').textContent = S.settings.savingsGoalName || 'Obiettivo';
+  document.getElementById('savings-vals').textContent = c.toFixed(0) + ' / ' + t.toFixed(0) + ' €';
+  document.getElementById('savings-bar').style.width = pct + '%';
+  if (document.getElementById('savings-display-name')) document.getElementById('savings-display-name').textContent = 'Salvadanaio';
+}
+
+function adjustSavings(add) {
+  const v = parseFloat(document.getElementById('savings-input').value);
+  if (!v || v <= 0) return;
+  S.savings.current = Math.max(0, (S.savings.current||0) + (add ? v : -v));
+  S.savings.history.push({ date: todayStr(), amount: add ? v : -v });
+  document.getElementById('savings-input').value = '';
+  save(); renderSavings(); renderStats();
+}
+
+// ========= STATISTICS =========
+function renderStats() {
+  renderLeaderboard();
+  renderCategoryChart();
+  renderSavingsChart();
+  renderWaterChart();
+  renderStreaks();
+  renderHistory();
+}
+
+function renderLeaderboard() {
+  const el = document.getElementById('stats-leaderboard');
+  if (!el) return;
+  const scores = [0,1].map(u => {
+    let score = 0;
+    S.settings.habits.forEach(h => {
+      const key = h.key + '_' + todayStr() + '_' + u;
+      if (S.habitHistory[key]) score += S.habitHistory[key] * 10;
+    });
+    // bonus for todos
+    S.todos.filter(t => t.done && (t.assignee === (u===0?'A':'B') || t.assignee === 'entrambi')).forEach(() => score += 5);
+    score += Math.round((S.water[u]||0) * 2);
+    return { name: S.settings.names[u], score, user: u };
+  }).sort((a,b) => b.score - a.score);
+
+  el.innerHTML = scores.map((s,i) => {
+    const rankClass = ['rank-1','rank-2','rank-3'][i] || '';
+    const medals = ['🥇','🥈','🥉'];
+    const bar = `<div style="flex:1;background:#f0ece8;border-radius:50px;height:6px;overflow:hidden;margin:0 10px;">
+      <div style="height:100%;background:${i===0?'var(--gold)':'var(--text-light)'};border-radius:50px;width:${Math.min(100,s.score)}%;"></div>
+    </div>`;
+    return `<div class="leaderboard-row">
+      <div class="rank-num ${rankClass}">${medals[i]||i+1}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--c1);min-width:80px;">${s.name}</div>
+      ${bar}
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:500;color:var(--c1);">${s.score}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCategoryChart() {
+  const el = document.getElementById('chart-categories');
+  if (!el) return;
+  const cats = {};
+  S.expenses.forEach(e => { cats[e.cat||'Altro'] = (cats[e.cat||'Altro']||0) + e.amount; });
+  const entries = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if (entries.length === 0) { el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px;">Nessuna spesa</div>'; return; }
+  const max = Math.max(...entries.map(e=>e[1]));
+  el.innerHTML = entries.map(([cat,val]) => `
+    <div class="chart-bar-col">
+      <div class="chart-bar-val">${val.toFixed(0)}€</div>
+      <div class="chart-bar" style="height:${Math.max(8,val/max*65)}px;background:var(--accent);opacity:${0.5+val/max*0.5};"></div>
+      <div class="chart-bar-label">${cat.replace(/[^\w\s]/g,'').trim().slice(0,5)}</div>
+    </div>`).join('');
+}
+
+function renderSavingsChart() {
+  const el = document.getElementById('chart-savings');
+  if (!el) return;
+  const hist = (S.savings.history || []).slice(-7);
+  if (hist.length === 0) { el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px;">Nessun storico risparmio</div>'; return; }
+  // cumulative from start
+  let cum = S.savings.current;
+  const entries = hist.map(h => ({ d: h.date.slice(5), v: h.amount }));
+  const max = Math.max(...entries.map(e => Math.abs(e.v)), 1);
+  el.innerHTML = entries.map(e => `
+    <div class="chart-bar-col">
+      <div class="chart-bar-val">${e.v > 0 ? '+' : ''}${e.v.toFixed(0)}</div>
+      <div class="chart-bar" style="height:${Math.max(8,Math.abs(e.v)/max*65)}px;background:${e.v>=0?'var(--sage)':'#ef4444'};"></div>
+      <div class="chart-bar-label">${e.d}</div>
+    </div>`).join('');
+}
+
+function renderWaterChart() {
+  const el = document.getElementById('chart-water');
+  if (!el) return;
+  const today = new Date();
+  const days = Array.from({length:7},(_,i)=>{
+    const d = new Date(today); d.setDate(d.getDate()-6+i);
+    return d.toISOString().split('T')[0];
+  });
+  const data = days.map(d => {
+    const total = [0,1].reduce((s,u) => {
+      const h = (S.waterHistory||[]).find(x=>x.date===d&&x.user===u);
+      return s + (h ? h.count : 0);
+    }, 0);
+    return { d: d.slice(8), total };
+  });
+  const max = Math.max(...data.map(d=>d.total), 8);
+  el.innerHTML = data.map(d => `
+    <div class="chart-bar-col">
+      <div class="chart-bar-val">${d.total}</div>
+      <div class="chart-bar" style="height:${Math.max(4,d.total/max*65)}px;background:var(--sky);"></div>
+      <div class="chart-bar-label">${d.d}</div>
+    </div>`).join('');
+}
+
+function renderStreaks() {
+  const el = document.getElementById('stats-streaks');
+  if (!el) return;
+  const data = [
+    { label: 'Spese registrate', count: S.expenses.length, icon: '💰' },
+    { label: 'To-do completati', count: S.todos.filter(t=>t.done).length, icon: '✅' },
+    { label: 'Note scritte', count: S.notes.length, icon: '📌' },
+    { label: 'Risparmio (€)', count: Math.round(S.savings.current||0), icon: '🐷' },
+  ];
+  el.innerHTML = data.map(d => `
+    <div class="streak-badge">
+      <span style="font-size:16px;">${d.icon}</span>
+      <span><strong>${d.count}</strong> ${d.label}</span>
+    </div>`).join('');
+}
+
+function renderHistory() {
+  const el = document.getElementById('stats-history');
+  if (!el) return;
+  const recent = S.expenses.slice(0,20);
+  if (recent.length === 0) { el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px;">Nessuna spesa</div>'; return; }
+  el.innerHTML = recent.map(e => {
+    const color = e.payer === 0 ? 'var(--accent)' : 'var(--sky)';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--c1);">${e.desc}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${S.settings.names[e.payer]} · ${e.date||''}</div>
+      </div>
+      <div style="font-family:'Fraunces',serif;font-size:15px;color:var(--c1);">${e.amount.toFixed(2)} €</div>
+    </div>`;
+  }).join('');
+}
+
+// Settings
+function openSettings() {
+  document.getElementById('setting-name-a').value = S.settings.names[0];
+  document.getElementById('setting-name-b').value = S.settings.names[1];
+  document.getElementById('setting-city').value = S.settings.city || '';
+  document.getElementById('setting-savings-name').value = S.settings.savingsGoalName || '';
+  document.getElementById('setting-savings-target').value = S.settings.savingsTarget || '';
+  renderHabitSettings();
+  document.getElementById('settings-modal').classList.add('open');
+}
+function renderHabitSettings() {
+  const el = document.getElementById('habit-settings-list');
+  if (!el) return;
+  el.innerHTML = S.settings.habits.map((h,i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#f8f6f3;border-radius:10px;padding:8px 10px;">
+      <div style="flex:1;font-size:13px;font-weight:500;color:var(--c1);">${h.name}</div>
+      <button onclick="removeHabit(${i})" class="btn btn-ghost btn-sm" style="padding:4px 8px;"><i class="fa-solid fa-times"></i></button>
+    </div>`).join('');
+}
+function addHabitSetting() {
+  const name = document.getElementById('new-habit-input').value.trim();
+  const sub = document.getElementById('new-habit-sub').value.trim();
+  if (!name) return;
+  const key = 'habit_' + Date.now();
+  S.settings.habits.push({ key, name, sub: sub || '' });
+  S.habits[key] = [false, false];
+  document.getElementById('new-habit-input').value = '';
+  document.getElementById('new-habit-sub').value = '';
+  renderHabitSettings(); save();
+}
+function removeHabit(idx) { S.settings.habits.splice(idx, 1); renderHabitSettings(); save(); }
+function saveSettings() {
+  S.settings.names[0] = document.getElementById('setting-name-a').value.trim() || 'Partner A';
+  S.settings.names[1] = document.getElementById('setting-name-b').value.trim() || 'Partner B';
+  S.settings.city = document.getElementById('setting-city').value.trim() || 'Roma';
+  const newName = document.getElementById('setting-savings-name').value.trim();
+  const newTarget = parseFloat(document.getElementById('setting-savings-target').value);
+  if (newName) S.settings.savingsGoalName = newName;
+  if (newTarget && newTarget > 0) S.settings.savingsTarget = newTarget;
+  save(); renderAll();
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function handleModalClick(e) {
+  if (e.target === document.getElementById('settings-modal')) document.getElementById('settings-modal').classList.remove('open');
+}
+function confirmReset() {
+  if (confirm('Eliminare TUTTI i dati? Irreversibile.')) { localStorage.removeItem('homesync_v3'); location.reload(); }
+}
+
+// Bot
+function botLog(from, msg) {
+  const el = document.getElementById('bot-log');
+  if (!el) return;
+  el.innerHTML += `<div><span style="color:${from==='Sistema'?'#4ade80':'#93c5fd'}">[${from}]</span> ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+function setBotInput(t) { document.getElementById('bot-input').value = t; }
+function sendBotCmd() {
+  const input = document.getElementById('bot-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  botLog('Tu', msg);
+  const expR = /^\/spesa\s+(\d+(?:\.\d+)?)\s+(.+)$/i;
+  const shopR = /^\/compra\s+(.+)$/i;
+  const noteR = /^\/nota\s+(.+)$/i;
+  const todoR = /^\/todo\s+(.+)$/i;
+  if (expR.test(msg)) { const m = msg.match(expR); addExpense(parseFloat(m[1]), m[2], 'Altro'); }
+  else if (shopR.test(msg)) { addShoppingItem(msg.match(shopR)[1]); }
+  else if (noteR.test(msg)) { addNote(msg.match(noteR)[1]); }
+  else if (todoR.test(msg)) {
+    S.todos.push({ id:Date.now(), text:msg.match(todoR)[1], done:false, priority:'media', assignee:'entrambi', date:todayStr() });
+    save(); renderTodos(); botLog('Bot','✅ To-do aggiunto!');
+  } else { botLog('Bot','❌ Usa: /spesa [€] [desc] · /compra [cosa] · /nota [testo] · /todo [attività]'); }
+  input.value = '';
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  ['bot-input'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('keydown', e => { if (e.key==='Enter') sendBotCmd(); }); });
+  ['shopping-input','note-input','todo-input','meal-name-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      if (id==='shopping-input') addShoppingItem();
+      else if (id==='note-input') addNote();
+      else if (id==='todo-input') addTodo();
+      else if (id==='meal-name-input') addMeal();
+    });
+  });
+  const calDate = document.getElementById('cal-date');
+  if (calDate) calDate.value = todayStr();
+});
+
+loadState(); updateClock(); renderAll(); setInterval(updateClock, 1000);
+(function checkReset() {
+  const last = localStorage.getItem('homesync_last_date');
+  const today = todayStr();
+  if (last && last !== today) {
+    [0,1].forEach(u => { if (!S.waterHistory) S.waterHistory=[]; S.waterHistory.push({date:last,user:u,count:S.water[u]||0}); S.water[u]=0; });
+    S.settings.habits.forEach(h => { S.habits[h.key]=[false,false]; });
+    save();
+  }
+  localStorage.setItem('homesync_last_date', today);
+})();
+</script>
 </body>
 </html>
-```eof
-
-### Riepilogo di cosa è stato creato:
-* **Fattore Sincronizzazione Locale:** Non c'è bisogno di installare database complessi o pagare hosting esterni. Questa dashboard salva tutto istantaneamente sul browser di chi la usa.
-* **Flusso d'Uso Dinamico:** Potete cliccare in alto a destra su **"Partner A"** o **"Partner B"** per simulare l'esperienza di ciascuno di voi. Le spese calcoleranno istantaneamente l'esatto saldo attivo e passivo di chi deve ricevere o dare soldi.
-* **Sperimentazione del Bot:** Scrivi `/spesa 32.50 Benzina` nel box nero del *Simulatore Bot* e premi invio per vedere l'importo balzare all'istante nella lista spese sotto!
-
-Puoi esportare o salvare questo file e aprirlo semplicemente con il browser sul tuo PC o sul telefono per vederlo in azione. Fammi sapere come ti sembra e se vuoi che implementiamo/personalizziamo qualche parte!
-
-```
